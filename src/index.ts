@@ -71,7 +71,5 @@ export type {
 } from './types/toolkit';
 
 export type { MCPConfig, MCPServerSettingsConfig, MCPHttpServerConfig, MCPStdioServerConfig } from './types/config';
-export { loadMCPConfig } from './config';
-export { startServersFromConfig } from './server';
 
 
