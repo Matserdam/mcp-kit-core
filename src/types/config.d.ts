@@ -1,18 +1,9 @@
-export interface MCPHttpServerConfig {
-  enable: true;
-  port: number;
-}
-
-export interface MCPStdioServerConfig {
+export interface MCPFetchHandlerConfig {
   enable: true;
 }
 
 export interface MCPServerSettingsConfig {
-  host?: string;
-  fetch?: MCPHttpServerConfig;
-  sse?: MCPHttpServerConfig;
-  streamable?: MCPHttpServerConfig;
-  stdio?: MCPStdioServerConfig;
+  fetch?: MCPFetchHandlerConfig;
 }
 
 export interface MCPConfig {
