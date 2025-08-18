@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MCPServer } from '../src/index';
+import { z } from 'zod';
 
 describe('MCPServer', () => {
   it('constructs with minimal options', () => {
@@ -18,7 +19,7 @@ describe('MCPServer', () => {
     const res = await server.fetch(new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }) }));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json?.result?.capabilities?.tools).toBe(true);
+    expect(json?.result?.capabilities?.tools).toStrictEqual({ listChanged: true });
   });
 
   it('tools/list returns tool metadata with namespace', async () => {
@@ -52,17 +53,18 @@ describe('MCPServer', () => {
             {
               name: 'get',
               description: 'Get weather',
-              run: async (input: any) => ({ city: input?.city ?? 'Unknown', tempC: 21 }),
+              input: { zod: z.object({ city: z.string() }) },
+              run: async (input: { city: string }) => ({ content: [{ type: 'text', text: input.city }] }),
             },
           ],
         },
       ],
     });
-    const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather.get', params: { city: 'Paris' } } }) });
+    const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather.get', arguments: { city: 'Paris' } } }) });
     const res = await server.fetch(req);
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json?.result?.city).toBe('Paris');
+    expect(json?.result?.content?.[0]?.text).toBe('Paris');
   });
 });
 

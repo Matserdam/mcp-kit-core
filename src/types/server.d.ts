@@ -1,0 +1,153 @@
+import { MCPJSONSchema } from "./toolkit";
+
+export interface MCPServerOptions {
+  toolkits: Array<MCPToolkit>;
+  logger?: Logger;
+  config?: Partial<Config>;
+}
+
+export interface MCPResponse {
+  jsonrpc: '2.0';
+  id: string | number | null;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult;
+  error?: {
+    code: number;
+    message: string;
+    data?: any;
+  };
+}
+
+export type MCPToolsCallParams = {
+  name: `${string}.${string}`;
+  params?: unknown;
+  arguments?: Record<string, unknown>;
+}
+
+export type MCPRequest = {
+    id: string | number | null;
+    method: 'initialize' | 'tools/list';
+    params?: Record<string, unknown> | undefined;
+    error?: Record<string, unknown>;
+  } | {
+    id: string | number | null;
+    method: 'tools/call';
+    params?: MCPToolsCallParams;
+    errror?: Record<string, unknown>;
+  };
+
+export type InitializeResult = {
+  protocolVersion: string;
+
+  capabilities: {
+    logging?: Record<string, unknown>;
+    prompts?: {
+      listChanged?: boolean;
+    };
+    resources?: {
+      subscribe?: boolean;
+      listChanged?: boolean;
+    };
+    tools?: {
+      listChanged?: boolean;
+    };
+    // Allow forward-compat / unknown capabilities
+    [key: string]: unknown;
+  };
+
+  serverInfo: {
+    name: string;
+    version: string;
+  };
+
+  instructions?: string;
+};
+
+
+export type MCPToolCallResult = {
+  content: ContentItem[],
+  structuredContent?: Record<string, any>,
+}
+
+export type MCPToolsListResult = {
+  tools: {
+    name: string;
+    description: string;
+    inputSchema?: MCPJSONSchema;
+    outputSchema?: MCPJSONSchema;
+  }[]
+}
+
+// Core content item variants the MCP clients expect
+export type ContentText = {
+  type: 'text'
+  text: string
+}
+
+export type ContentImage = {
+  type: 'image'
+  /** Base64-encoded bytes */
+  data: string
+  /** e.g. "image/png", "image/jpeg" */
+  mimeType: string
+  annotations?: {
+    audience?: string[]
+    priority?: number
+  }
+}
+
+export type ContentAudio = {
+  type: 'audio'
+  /** Base64-encoded bytes */
+  data: string
+  /** e.g. "audio/mpeg", "audio/wav" */
+  mimeType: string
+}
+
+/**
+ * A link to an external artifact the client can open/download.
+ * Use this when you want to show a single, simple link (no data in-band).
+ */
+export type ContentResourceLink = {
+  type: 'resource_link'
+  name: string
+  uri: string // e.g. https://..., file://..., etc.
+}
+
+/**
+ * An in-band resource payload. Use this when you want to include the resource itself
+ * or reference it with richer metadata. One of "uri" | "text" | "blob" should be provided.
+ */
+export type ContentResource = {
+  type: 'resource'
+  resource:
+  | { uri: string; name?: string; mimeType?: string }
+  | { text: string; name?: string; mimeType?: string }
+  | { blob: string; mimeType: string; name?: string } // blob is base64
+}
+
+// Union of all supported content types
+export type ContentItem = ContentText
+  | ContentImage
+  | ContentAudio
+  | ContentResourceLink
+  | ContentResource;
+
+// Tool call response shape: { content: ContentItem[] }
+
+
+// Resource content entries for resources/read
+export type MCPResourceContent = {
+  uri: string
+  name?: string
+  title?: string
+  description?: string
+  mimeType?: string
+  size?: number
+  text?: string
+  blob?: string // base64
+}
+
+// Result for resources/read calls per MCP spec
+export type MCPResourceReadResult = {
+  contents: MCPResourceContent[]
+}
