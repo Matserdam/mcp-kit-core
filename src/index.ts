@@ -1,18 +1,4 @@
-export interface Toolkit<TContext = unknown, TResult = unknown> {
-  name: string;
-  tools: Tool<TContext, TResult>[];
-  createContext?(init: ToolkitInit): Promise<TContext> | TContext;
-}
-
-export interface Tool<TContext, TResult> {
-  name: string;
-  description?: string;
-  run(input: unknown, context: TContext): Promise<TResult> | TResult;
-}
-
-export interface ToolkitInit {
-  requestId: string;
-}
+import type { MCPToolkit } from './types/toolkit';
 
 export interface Logger {
   debug(message: string, meta?: unknown): void;
@@ -28,7 +14,7 @@ export interface Config {
 }
 
 export interface MCPServerOptions {
-  toolkits: Array<Toolkit>;
+  toolkits: Array<MCPToolkit>;
   logger?: Logger;
   config?: Partial<Config>;
 }
@@ -73,5 +59,15 @@ export class MCPServer {
     }));
   }
 }
+
+export type {
+  MCPToolkit,
+  MCPTool,
+  MCPToolkitInit,
+  MCPSchemaDef,
+  MCPJSONSchema,
+  MCPToolMiddleware,
+  MCPToolkitMiddleware,
+} from './types/toolkit';
 
 
