@@ -1,0 +1,46 @@
+{
+  "name": "@mcp-kit/core",
+  "version": "0.0.0",
+  "description": "Lightweight TypeScript Model Context Protocol (MCP) server package",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint . --ext .ts,.tsx,.mts,.cts",
+    "format": "prettier -w .",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "check:types": "tsc -p tsconfig.build.json --noEmit",
+    "size": "node -e \"console.log('size check TBD')\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
+
+
