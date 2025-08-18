@@ -70,6 +70,6 @@ export type {
   MCPToolkitMiddleware,
 } from './types/toolkit';
 
-export type { MCPConfig, MCPServerSettingsConfig, MCPFetchHandlerConfig } from './types/config';
+export type { MCPConfig, MCPServerSettingsConfig } from './types/config';
 
 

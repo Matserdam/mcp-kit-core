@@ -1,9 +1,5 @@
-export interface MCPFetchHandlerConfig {
-  enable: true;
-}
-
 export interface MCPServerSettingsConfig {
-  fetch?: MCPFetchHandlerConfig;
+  // Reserved for future server-level settings
 }
 
 export interface MCPConfig {
