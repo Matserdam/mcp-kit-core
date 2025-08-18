@@ -7,10 +7,62 @@ describe('MCPServer', () => {
     expect(server).toBeInstanceOf(MCPServer);
   });
 
-  it('fetch returns 501 Not Implemented by default', async () => {
+  it('non-POST returns 405', async () => {
     const server = new MCPServer({ toolkits: [] });
-    const res = await server.fetch(new Request('http://localhost'));
-    expect(res.status).toBe(501);
+    const res = await server.fetch(new Request('http://localhost', { method: 'GET' }));
+    expect(res.status).toBe(405);
+  });
+
+  it('initialize returns capabilities', async () => {
+    const server = new MCPServer({ toolkits: [] });
+    const res = await server.fetch(new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }) }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json?.result?.capabilities?.tools).toBe(true);
+  });
+
+  it('tools/list returns tool metadata with namespace', async () => {
+    const server = new MCPServer({
+      toolkits: [
+        {
+          namespace: 'weather',
+          tools: [
+            {
+              name: 'get',
+              description: 'Get weather',
+              run: async () => ({ tempC: 20 }),
+            },
+          ],
+        },
+      ],
+    });
+    const res = await server.fetch(new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'a', method: 'tools/list' }) }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const names = (json?.result?.tools ?? []).map((t: any) => t.name);
+    expect(names).toContain('weather.get');
+  });
+
+  it('tools/call invokes a namespaced tool', async () => {
+    const server = new MCPServer({
+      toolkits: [
+        {
+          namespace: 'weather',
+          tools: [
+            {
+              name: 'get',
+              description: 'Get weather',
+              run: async (input: any) => ({ city: input?.city ?? 'Unknown', tempC: 21 }),
+            },
+          ],
+        },
+      ],
+    });
+    const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather.get', params: { city: 'Paris' } } }) });
+    const res = await server.fetch(req);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json?.result?.city).toBe('Paris');
   });
 });
 
