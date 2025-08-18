@@ -8,7 +8,7 @@ export interface RunningServersHandle {
 export async function startServersFromConfig(core: MCPServer, config: MCPConfig): Promise<RunningServersHandle> {
   const closers: Array<() => Promise<void>> = [];
 
-  if (config.server.transports.stdio) {
+  if (config.server.stdio?.enable) {
     core.stdio();
     closers.push(async () => {
       // stdio is process-bound; nothing to close for now

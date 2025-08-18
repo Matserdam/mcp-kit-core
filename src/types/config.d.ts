@@ -1,20 +1,18 @@
-export interface MCPServerTransportsConfig {
-  fetch: boolean;
-  sse: boolean;
-  stdio: boolean;
-  streamable: boolean;
+export interface MCPHttpServerConfig {
+  enable: true;
+  port: number;
 }
 
-export interface MCPServerPortsConfig {
-  host?: string;
-  fetch?: number;
-  sse?: number;
-  streamable?: number;
+export interface MCPStdioServerConfig {
+  enable: true;
 }
 
 export interface MCPServerSettingsConfig {
-  transports: MCPServerTransportsConfig;
-  ports?: MCPServerPortsConfig;
+  host?: string;
+  fetch?: MCPHttpServerConfig;
+  sse?: MCPHttpServerConfig;
+  streamable?: MCPHttpServerConfig;
+  stdio?: MCPStdioServerConfig;
 }
 
 export interface MCPConfig {

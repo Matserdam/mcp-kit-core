@@ -1,4 +1,4 @@
-import type { MCPConfig, MCPServerPortsConfig, MCPServerSettingsConfig } from './types/config';
+import type { MCPConfig } from './types/config';
 
 function parsePort(value: string | undefined): number | undefined {
   if (!value) return undefined;
@@ -7,49 +7,36 @@ function parsePort(value: string | undefined): number | undefined {
 }
 
 export function loadMCPConfig(overrides?: Partial<MCPConfig>): MCPConfig {
-  const envPorts: MCPServerPortsConfig = {
-    host: process.env.MCP_HOST,
-    fetch: parsePort(process.env.MCP_FETCH_PORT),
-    sse: parsePort(process.env.MCP_SSE_PORT),
-    streamable: parsePort(process.env.MCP_STREAMABLE_PORT),
-  };
+  const host = process.env.MCP_HOST;
+  const envFetch = parsePort(process.env.MCP_FETCH_PORT);
+  const envSse = parsePort(process.env.MCP_SSE_PORT);
+  const envStreamable = parsePort(process.env.MCP_STREAMABLE_PORT);
 
-  const base: MCPServerSettingsConfig = {
-    transports: {
-      fetch: false,
-      sse: false,
-      stdio: false,
-      streamable: false,
-    },
-    ports: envPorts,
-  };
+  const srv = overrides?.server ?? {};
 
-  const merged: MCPConfig = {
+  // Resolve stdio
+  const stdio = srv.stdio?.enable ? ({ enable: true } as const) : undefined;
+
+  // Resolve HTTP transports (enabled only if overrides specify enable: true)
+  const fetch = srv.fetch?.enable
+    ? { enable: true as const, port: srv.fetch.port ?? envFetch ?? (() => { throw new Error('MCP_FETCH_PORT must be set when fetch transport is enabled'); })() }
+    : undefined;
+  const sse = srv.sse?.enable
+    ? { enable: true as const, port: srv.sse.port ?? envSse ?? (() => { throw new Error('MCP_SSE_PORT must be set when sse transport is enabled'); })() }
+    : undefined;
+  const streamable = srv.streamable?.enable
+    ? { enable: true as const, port: srv.streamable.port ?? envStreamable ?? (() => { throw new Error('MCP_STREAMABLE_PORT must be set when streamable transport is enabled'); })() }
+    : undefined;
+
+  return {
     server: {
-      transports: {
-        ...base.transports,
-        ...(overrides?.server?.transports ?? {}),
-      },
-      ports: {
-        ...base.ports,
-        ...(overrides?.server?.ports ?? {}),
-      },
+      host: srv.host ?? host,
+      stdio,
+      fetch,
+      sse,
+      streamable,
     },
   };
-
-  // Validate: if an HTTP transport is enabled, a port must be provided
-  const { transports, ports } = merged.server;
-  if (transports.fetch && !ports?.fetch) {
-    throw new Error('MCP_FETCH_PORT must be set when fetch transport is enabled');
-  }
-  if (transports.sse && !ports?.sse) {
-    throw new Error('MCP_SSE_PORT must be set when sse transport is enabled');
-  }
-  if (transports.streamable && !ports?.streamable) {
-    throw new Error('MCP_STREAMABLE_PORT must be set when streamable transport is enabled');
-  }
-
-  return merged;
 }
 
 
