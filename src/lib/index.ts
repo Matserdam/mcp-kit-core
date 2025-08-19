@@ -1,5 +1,6 @@
 import type { InitializeResult, MCPRequest, MCPResponse, MCPServerOptions, MCPToolCallResult, MCPToolsListResult } from '../types/server';
 import type { MCPSSERenderer, MCPSSERuntimeOptions, MCPSSERawEvent } from '../types/sse';
+import { createSseRenderer } from './sse';
 import { MCPTool, MCPToolkit } from '../types/toolkit';
 import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
@@ -113,15 +114,17 @@ export class MCPServer {
 
   public httpSSE(req: unknown, options?: MCPSSERuntimeOptions): Promise<ReadableStream<Uint8Array>> {
     void req;
-    void options;
-    const encoder = new TextEncoder();
-    return Promise.resolve(new ReadableStream<Uint8Array>({
+    const renderer = createSseRenderer({ commentHeartbeat: options?.commentHeartbeat });
+    const retry = typeof options?.retryMs === 'number' ? options?.retryMs : undefined;
+    const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode('event: message\n'));
-        controller.enqueue(encoder.encode('data: not-implemented\n\n'));
+        // Initial hello message to verify framing
+        const hello = renderer.render({ event: 'message', data: 'ready', retry });
+        controller.enqueue(hello);
         controller.close();
       },
-    }));
+    });
+    return Promise.resolve(stream);
   }
 }
 
