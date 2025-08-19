@@ -32,6 +32,25 @@ Bun.serve({
 });
 ```
 
+## STDIO transport
+
+Run the server over stdio for MCP clients (recommended by the spec for LLM clients). Example server:
+
+```ts
+import { MCPServer } from '@mcp-kit/core';
+
+const server = new MCPServer({ toolkits });
+server.startStdio();
+```
+
+Test locally with MCP Inspector:
+
+```bash
+bunx @modelcontextprotocol/inspector
+```
+
+Then add a server → choose stdio and target your running process.
+
 ## Using MCP Inspector
 
 You can explore and test your MCP server with the MCP Inspector.
