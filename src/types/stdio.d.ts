@@ -9,6 +9,8 @@ export interface MCPStdioOptions {
   output?: NodeJS.WriteStream | WritableStream<Uint8Array>;
   /** Message framing strategy. Default: 'ndjson'. */
   framing?: MCPStdioFraming;
+  /** When true (default), install SIGINT/SIGTERM handlers to stop stdio gracefully. */
+  enableSignalHandlers?: boolean;
 }
 
 export interface MCPStdioController {

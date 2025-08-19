@@ -7,10 +7,15 @@ This project adheres to Semantic Versioning and uses Conventional Commits.
 ## [Unreleased]
 
 ### Added
-- MCPServer skeleton with handlers: `fetch`, `stdio`, `httpStreamable`, `httpSSE`
+- MCPServer skeleton with handlers: `fetch`, `stdio`, `httpStreamable`
 - TypeScript strict config, tsup build, ESLint/Prettier, Vitest test runner
 - Docs: roles aligned to TypeScript MCP server, project overview, commit conventions
 - Epic EPIC-001 with stories for scaffolding, conventions, abstract schema, and API design
+ - EPIC-004 (stdio transport):
+   - STORY-018: stdio types and controller API
+   - STORY-019: stdio reader/writer loops with backpressure and NDJSON reassembly
+   - STORY-020: JSON-RPC routing via `handleRPC`, notifications, error mapping
+   - STORY-021: graceful shutdown (EOF/SIGINT/SIGTERM) and error handling
 
 ## 0.0.0 - 2025-08-18
 
