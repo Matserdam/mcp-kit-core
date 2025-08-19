@@ -1,6 +1,4 @@
 import type { InitializeResult, MCPRequest, MCPResponse, MCPServerOptions, MCPToolCallResult, MCPToolsListResult } from '../types/server';
-import type { MCPSSERenderer, MCPSSERuntimeOptions, MCPSSERawEvent } from '../types/sse';
-import { createSseRenderer } from './sse';
 import { MCPTool, MCPToolkit } from '../types/toolkit';
 import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
@@ -110,54 +108,6 @@ export class MCPServer {
       },
     });
     return Promise.resolve({ status: 501, headers: new Headers({ 'content-type': 'text/plain' }), body: stream });
-  }
-
-  public httpSSE(request: Request, options?: MCPSSERuntimeOptions): Promise<ReadableStream<Uint8Array>> {
-    return this.handleSSE(request, options);
-  }
-
-  private handleSSE = async (request: Request, options?: MCPSSERuntimeOptions): Promise<ReadableStream<Uint8Array>> => {
-    void request;
-    const renderer = createSseRenderer({ commentHeartbeat: options?.commentHeartbeat });
-    const retry = typeof options?.retryMs === 'number' ? options?.retryMs : undefined;
-    const heartbeatIntervalMs = options?.heartbeatIntervalMs ?? 0;
-    const idleTimeoutMs = options?.idleTimeoutMs ?? 0;
-
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
-        let idleTimer: ReturnType<typeof setTimeout> | undefined;
-
-        const cleanup = () => {
-          if (heartbeatTimer) clearInterval(heartbeatTimer);
-          if (idleTimer) clearTimeout(idleTimer);
-          heartbeatTimer = undefined;
-          idleTimer = undefined;
-        };
-
-        // Initial hello message to verify framing
-        const hello = renderer.render({ event: 'message', data: 'ready', retry });
-        controller.enqueue(hello);
-
-        if (heartbeatIntervalMs > 0) {
-          heartbeatTimer = setInterval(() => {
-            try {
-              controller.enqueue(renderer.renderHeartbeat());
-            } catch {
-              cleanup();
-            }
-          }, heartbeatIntervalMs);
-        }
-
-        if (idleTimeoutMs > 0) {
-          idleTimer = setTimeout(() => {
-            cleanup();
-            try { controller.close(); } catch { /* noop */ }
-          }, idleTimeoutMs);
-        }
-      },
-    });
-    return Promise.resolve(stream);
   }
 }
 
