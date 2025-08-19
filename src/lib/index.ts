@@ -1,4 +1,5 @@
 import type { InitializeResult, MCPRequest, MCPResponse, MCPServerOptions, MCPToolCallResult, MCPToolsListResult } from '../types/server';
+import type { MCPSSERenderer, MCPSSERuntimeOptions, MCPSSERawEvent } from '../types/sse';
 import { MCPTool, MCPToolkit } from '../types/toolkit';
 import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
@@ -110,8 +111,9 @@ export class MCPServer {
     return Promise.resolve({ status: 501, headers: new Headers({ 'content-type': 'text/plain' }), body: stream });
   }
 
-  public httpSSE(req: unknown): Promise<ReadableStream<Uint8Array>> {
+  public httpSSE(req: unknown, options?: MCPSSERuntimeOptions): Promise<ReadableStream<Uint8Array>> {
     void req;
+    void options;
     const encoder = new TextEncoder();
     return Promise.resolve(new ReadableStream<Uint8Array>({
       start(controller) {
