@@ -1,4 +1,5 @@
 import type { InitializeResult, MCPRequest, MCPResponse, MCPServerOptions, MCPToolCallResult, MCPToolsListResult } from '../types/server';
+import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
 import { MCPTool, MCPToolkit } from '../types/toolkit';
 import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
@@ -96,6 +97,16 @@ export class MCPServer {
 
   public stdio(): void {
     // Placeholder for stdio transport
+  }
+
+  public startStdio(options?: MCPStdioOptions): MCPStdioController {
+    void options;
+    let running = true;
+    return {
+      get isRunning() { return running; },
+      async stop() { running = false; },
+      notify() { return running; },
+    };
   }
 
   public httpStreamable(req: unknown): Promise<{ status: number; headers: Headers; body: ReadableStream<Uint8Array> }>{
