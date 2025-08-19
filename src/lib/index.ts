@@ -5,6 +5,8 @@ import { MCPTool, MCPToolkit } from '../types/toolkit';
 import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
 import { handleRPC } from './rpc';
+import { responseJson } from './response/json';
+import { responseSSEOnce } from './response/sse';
 
 export class MCPServer {
   private readonly options: MCPServerOptions;
@@ -71,11 +73,7 @@ export class MCPServer {
 
     console.log('fetch', method);
 
-    const json = (data: unknown, init?: ResponseInit) =>
-      new Response(JSON.stringify(data), {
-        headers: { 'content-type': 'application/json' },
-        ...init,
-      });
+    const json = (data: unknown, init?: ResponseInit) => responseJson(data, init);
 
     if (method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
@@ -87,12 +85,36 @@ export class MCPServer {
       return json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
     }
     console.log({ rpc });
+    // Accept negotiation
+    const accept = request.headers.get('accept') ?? '*/*';
+    const wantsEventStream = /(^|,|\s)text\/event-stream(\s*;|\s|$)/i.test(accept);
+    const wantsJson = /(^|,|\s)application\/json(\s*;|\s|$)/i.test(accept) || accept.includes('*/*');
+
+    // If client sent a JSON-RPC response payload (not a request), ack with 202
+    const isClientResponse = rpc && typeof rpc === 'object' && rpc.jsonrpc === '2.0' && !('method' in rpc) && (('result' in rpc) || ('error' in rpc));
+    if (isClientResponse) {
+      return new Response(null, { status: 202 });
+    }
     const parsed = parseFetchRpc(rpc);
     if ("error" in parsed) {
       console.log('parse error 2', rpc, parsed);
       return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
     }
+    // Notification (no id provided by client payload)
+    const isNotification = rpc && typeof rpc === 'object' && rpc.jsonrpc === '2.0' && typeof rpc.method === 'string' && !('id' in rpc);
+    if (isNotification) {
+      void handleRPC(parsed, this.options.toolkits);
+      return new Response(null, { status: 202 });
+    }
+
     const response = await handleRPC(parsed, this.options.toolkits);
+    if (wantsEventStream && !wantsJson) {
+      return responseSSEOnce(response);
+    }
+    if (wantsEventStream && wantsJson) {
+      // Prefer SSE when explicitly requested alongside JSON
+      return responseSSEOnce(response);
+    }
     return json(response);
   }
 
