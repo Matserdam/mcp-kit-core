@@ -27,7 +27,8 @@
     "test": "vitest run",
     "clean": "rimraf dist",
     "check:types": "tsc -p tsconfig.build.json --noEmit",
-    "size": "node -e \"console.log('size check TBD')\""
+    "size": "node -e \"console.log('size check TBD')\"",
+    "load:stdio": "bun tests/load/stdio-perf.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
