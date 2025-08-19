@@ -18,14 +18,14 @@ export interface MCPResponse {
 }
 
 export type MCPToolsCallParams = {
-  name: `${string}.${string}`;
+  name: `${string}.${string}` | `${string}_${string}`;
   params?: unknown;
   arguments?: Record<string, unknown>;
 }
 
 export type MCPRequest = {
     id: string | number | null;
-    method: 'initialize' | 'tools/list';
+    method: 'initialize' | 'notifications/initialized' | 'tools/list';
     params?: Record<string, unknown> | undefined;
     error?: Record<string, unknown>;
   } | {
@@ -102,6 +102,7 @@ export type ContentAudio = {
   /** e.g. "audio/mpeg", "audio/wav" */
   mimeType: string
 }
+
 
 /**
  * A link to an external artifact the client can open/download.

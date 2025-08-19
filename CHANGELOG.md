@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Breaking: Tool names now use underscore delimiter `namespace_tool` instead of dot `namespace.tool`.
+  - Reason: Improve compatibility with clients (e.g., Claude) that restrict dots in tool name regexes.
+  - Server accepts legacy dot-form for calls, but lists tools with underscores.
+# Changelog
+
 All notable changes to this project will be documented in this file.
 
 This project adheres to Semantic Versioning and uses Conventional Commits.

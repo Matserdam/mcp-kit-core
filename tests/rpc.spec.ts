@@ -24,7 +24,7 @@ describe('handleRPC', () => {
     };
     const req: MCPRequest = { id: 'a', method: 'tools/list' } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
-    expect((res as any).result.tools[0].name).toBe('ns.t');
+    expect((res as any).result.tools[0].name).toBe('ns_t');
     expect((res as any).result.tools[0].inputSchema).toBeDefined();
   });
 
@@ -33,19 +33,19 @@ describe('handleRPC', () => {
       name: 'sum',
       run: (args: any) => ({ content: [{ type: 'text', text: String((args?.a ?? 0) + (args?.b ?? 0)) }] }),
     } as MCPTool;
-    const req: MCPRequest = { id: 2, method: 'tools/call', params: { name: 'ns.sum', arguments: { a: 1, b: 2 } } } as MCPRequest;
+    const req: MCPRequest = { id: 2, method: 'tools/call', params: { name: 'ns_sum', arguments: { a: 1, b: 2 } } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
     expect((res as any).result.content[0].text).toBe('3');
   });
 
   it('errors when toolkit not found', async () => {
-    const req: MCPRequest = { id: 3, method: 'tools/call', params: { name: 'missing.sum', arguments: {} } } as MCPRequest;
+    const req: MCPRequest = { id: 3, method: 'tools/call', params: { name: 'missing_sum', arguments: {} } } as MCPRequest;
     const res = await handleRPC(req, []);
     expect(res.error?.code).toBe(-32601);
   });
 
   it('errors when tool not found', async () => {
-    const req: MCPRequest = { id: 4, method: 'tools/call', params: { name: 'ns.missing', arguments: {} } } as MCPRequest;
+    const req: MCPRequest = { id: 4, method: 'tools/call', params: { name: 'ns_missing', arguments: {} } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([])]);
     expect(res.error?.code).toBe(-32601);
   });
@@ -56,7 +56,7 @@ describe('handleRPC', () => {
       input: { zod: z.object({ a: z.string() }) },
       run: () => ({ content: [{ type: 'text', text: 'ok' }] }),
     } as MCPTool;
-    const req: MCPRequest = { id: 5, method: 'tools/call', params: { name: 'ns.needsA', arguments: { a: 1 } } } as MCPRequest;
+    const req: MCPRequest = { id: 5, method: 'tools/call', params: { name: 'ns_needsA', arguments: { a: 1 } } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
     expect(res.error?.code).toBe(-32602);
   });

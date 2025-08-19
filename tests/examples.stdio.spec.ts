@@ -16,14 +16,14 @@ describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
     expect(init.jsonrpc).toBe('2.0');
 
     const list = await jsonrpc(fetcher, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
-    expect(JSON.stringify(list)).toContain('demo.echo');
-    expect(JSON.stringify(list)).toContain('demo.sum');
+    expect(JSON.stringify(list)).toContain('demo_echo');
+    expect(JSON.stringify(list)).toContain('demo_sum');
 
     const echo = await jsonrpc(fetcher, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
-      params: { name: 'demo.echo', arguments: { text: 'hi' } },
+      params: { name: 'demo_echo', arguments: { text: 'hi' } },
     });
     expect(JSON.stringify(echo)).toContain('hi');
 
@@ -31,7 +31,7 @@ describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/call',
-      params: { name: 'demo.sum', arguments: { a: 2, b: 3 } },
+      params: { name: 'demo_sum', arguments: { a: 2, b: 3 } },
     });
     expect(JSON.stringify(sum)).toContain('5');
   });

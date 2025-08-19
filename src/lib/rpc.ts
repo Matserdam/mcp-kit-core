@@ -7,6 +7,9 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
   switch (method) {
     case 'initialize':
       return { jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18', serverInfo: { name: 'mcp-kit', version: '0.0.1' }, capabilities: { tools: { listChanged: true } } } };
+    case 'notifications/initialized':
+      // Notification acknowledgement for client 'initialized'
+      return { jsonrpc: '2.0', id, result: { ok: true } as any };
     case 'tools/list':
       return {
         jsonrpc: '2.0', id, result: {
@@ -15,7 +18,8 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
               tools: (tk.tools ?? [])
                 .map((tool: MCPTool) =>
                 ({
-                  name: `${tk.namespace}.${tool.name}`,
+                  // Use underscore to delimit namespace and tool name
+                  name: `${tk.namespace}_${tool.name}`,
                   description: tool.description ?? '',
                   inputSchema: getValidSchema(tool.input),
                   outputSchema: getValidSchema(tool.output)
@@ -40,7 +44,21 @@ const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParam
     return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } };
   }
 
-  const [namespace, toolName] = params.name.split('.');
+  // Support new underscore delimiter and accept legacy dot as a fallback
+  let namespace: string | undefined;
+  let toolName: string | undefined;
+  if (typeof params.name === 'string' && params.name.includes('_')) {
+    const idx = params.name.indexOf('_');
+    namespace = params.name.slice(0, idx);
+    toolName = params.name.slice(idx + 1);
+  } else if (typeof params.name === 'string' && params.name.includes('.')) {
+    const idx = params.name.indexOf('.');
+    namespace = params.name.slice(0, idx);
+    toolName = params.name.slice(idx + 1);
+  }
+  if (!namespace || !toolName) {
+    return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected params.name as "namespace_tool"' } };
+  }
   const toolkit = toolkits.find((tk: MCPToolkit) => tk.namespace === namespace);
   if (!toolkit) {
     return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Toolkit not found' } };
@@ -62,5 +80,16 @@ const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParam
   }
 
   const result = await tool.run(params.arguments, toolkit.createContext?.({ requestId: id }) ?? {});
-  return { jsonrpc: '2.0', id, result };
+  try {
+    const result = await tool.run(
+      params.arguments,
+      toolkit.createContext?.({ requestId: id }) ?? {}
+    );
+    return { jsonrpc: '2.0', id, result };
+  } catch (err: any) {
+    const code = typeof err?.code === 'number' ? err.code : -32000;
+    const message = typeof err?.message === 'string' ? err.message : 'Tool execution error';
+    const data = err?.data ?? undefined;
+    return { jsonrpc: '2.0', id, error: { code, message, data } };
+  }
 }

@@ -41,7 +41,7 @@ describe('MCPServer', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     const names = (json?.result?.tools ?? []).map((t: any) => t.name);
-    expect(names).toContain('weather.get');
+    expect(names).toContain('weather_get');
   });
 
   it('tools/call invokes a namespaced tool', async () => {
@@ -60,7 +60,7 @@ describe('MCPServer', () => {
         },
       ],
     });
-    const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather.get', arguments: { city: 'Paris' } } }) });
+    const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather_get', arguments: { city: 'Paris' } } }) });
     const res = await server.fetch(req);
     expect(res.status).toBe(200);
     const json = await res.json();

@@ -77,4 +77,9 @@ Then in the Inspector UI:
 - Send the following JSON-RPC requests to verify:
   - Initialize: `{ "jsonrpc": "2.0", "id": 1, "method": "initialize" }`
   - List tools: `{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }`
-  - Call a tool: `{ "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "demo.echo", "params": { "msg": "hi" } } }`
+  - Call a tool: `{ "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "demo_echo", "params": { "msg": "hi" } } }`
+
+### Tool name delimiter policy
+
+- Tools are listed and called using underscore-delimited names: `namespace_tool`.
+- Rationale: some MCP clients (e.g., Claude) expect regexes that disallow dots in tool names. Using underscores avoids compatibility issues.
