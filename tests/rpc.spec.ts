@@ -25,7 +25,7 @@ describe('handleRPC', () => {
     const req: MCPRequest = { id: 'a', method: 'tools/list' } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
     expect((res as any).result.tools[0].name).toBe('ns_t');
-    expect((res as any).result.tools[0].inputSchema).toBeDefined();
+    expect((res as any).result.tools[0].input_schema).toBeDefined();
   });
 
   it('calls a tool and returns MCPToolCallResult', async () => {

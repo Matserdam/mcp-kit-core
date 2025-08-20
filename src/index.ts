@@ -5,5 +5,6 @@ export type * from './types/server';
 export type * from './types/config';
 export type * from './types/stdio';
 export type * from './types/pokemon';
+export type * from './types/search';
 
 

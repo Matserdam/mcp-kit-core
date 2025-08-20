@@ -5,8 +5,19 @@ import { getValidSchema } from "../utils";
 export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Promise<MCPResponse> => {
   const { id, method, params } = request;
   switch (method) {
-    case 'initialize':
-      return { jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18', serverInfo: { name: 'mcp-kit', version: '0.0.1' }, capabilities: { tools: { listChanged: true }, prompts: { listChanged: false }, resources: { listChanged: false } } } };
+    case 'initialize': {
+      const requestedProtocol = (params as any)?.protocolVersion;
+      const protocolVersion = typeof requestedProtocol === 'string' && requestedProtocol.length > 0
+        ? requestedProtocol
+        : '2025-06-18';
+      return {
+        jsonrpc: '2.0', id, result: {
+          protocolVersion,
+          serverInfo: { name: 'mcp-kit', version: '0.0.1' },
+          capabilities: { tools: { listChanged: true }, prompts: { listChanged: false }, resources: { listChanged: false } }
+        }
+      };
+    }
     case 'notifications/initialized':
       // Notification acknowledgement for client 'initialized'
       return { jsonrpc: '2.0', id, result: { ok: true } as any };
@@ -28,6 +39,10 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
           }).flatMap((t) => t.tools)
         }
       };
+    case 'prompts/list':
+      return { jsonrpc: '2.0', id, result: { prompts: [] } as any };
+    case 'resources/list':
+      return { jsonrpc: '2.0', id, result: { resources: [] } as any };
     case 'tools/call':
       return handleToolCall(request, toolkits);
 

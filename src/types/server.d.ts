@@ -9,7 +9,7 @@ export interface MCPServerOptions {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPResourcesListResult;
   error?: {
     code: number;
     message: string;
@@ -25,7 +25,7 @@ export type MCPToolsCallParams = {
 
 export type MCPRequest = {
     id: string | number | null;
-    method: 'initialize' | 'notifications/initialized' | 'tools/list';
+    method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list';
     params?: Record<string, unknown> | undefined;
     error?: Record<string, unknown>;
   } | {
@@ -75,6 +75,16 @@ export type MCPToolsListResult = {
     inputSchema?: MCPJSONSchema;
     outputSchema?: MCPJSONSchema;
   }[]
+}
+
+// Prompts list result per MCP spec
+export type MCPPROMPTSListResult = {
+  prompts: any[]
+}
+
+// Resources list result per MCP spec
+export type MCPResourcesListResult = {
+  resources: any[]
 }
 
 // Core content item variants the MCP clients expect
