@@ -6,7 +6,7 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
   const { id, method, params } = request;
   switch (method) {
     case 'initialize':
-      return { jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18', serverInfo: { name: 'mcp-kit', version: '0.0.1' }, capabilities: { tools: { listChanged: true } } } };
+      return { jsonrpc: '2.0', id, result: { protocolVersion: '2025-06-18', serverInfo: { name: 'mcp-kit', version: '0.0.1' }, capabilities: { tools: { listChanged: true }, prompts: { listChanged: false }, resources: { listChanged: false } } } };
     case 'notifications/initialized':
       // Notification acknowledgement for client 'initialized'
       return { jsonrpc: '2.0', id, result: { ok: true } as any };

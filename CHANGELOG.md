@@ -5,6 +5,9 @@
 - Breaking: Tool names now use underscore delimiter `namespace_tool` instead of dot `namespace.tool`.
   - Reason: Improve compatibility with clients (e.g., Claude) that restrict dots in tool name regexes.
   - Server accepts legacy dot-form for calls, but lists tools with underscores.
+- Examples: Pokémon example now uses Hono with CORS middleware and exposes `/mcp` endpoint with CORS enabled.
+- Examples: Pokémon toolkit implements tools `pokemon_get`, `pokemon_sound`, `pokemon_front`, and `pokemon_back`.
+- Types: Only `audio` and `image` content types supported; `video` removed from union.
 # Changelog
 
 All notable changes to this project will be documented in this file.
