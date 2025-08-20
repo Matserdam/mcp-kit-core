@@ -8,6 +8,11 @@
 - Examples: Pokémon example now uses Hono with CORS middleware and exposes `/mcp` endpoint with CORS enabled.
 - Examples: Pokémon toolkit implements tools `pokemon_get`, `pokemon_sound`, `pokemon_front`, and `pokemon_back`.
 - Types: Only `audio` and `image` content types supported; `video` removed from union.
+- Core: `initialize` now echoes client's `protocolVersion` if provided (spec alignment).
+- Core: Added handlers for `prompts/list` and `resources/list` (return empty lists for now).
+- Core: tools/list exposes canonical tool `search` as plain `search`; tools/call normalizes `search` → `search_search`.
+- DX: Warn at startup if no canonical `search` toolkit/tool is registered.
+- Examples: Added a stub `search` toolkit to examples, returning an empty result with zod-validated input.
 # Changelog
 
 All notable changes to this project will be documented in this file.

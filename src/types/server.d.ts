@@ -18,7 +18,7 @@ export interface MCPResponse {
 }
 
 export type MCPToolsCallParams = {
-  name: `${string}.${string}` | `${string}_${string}`;
+  name: `${string}_${string}` | string;
   params?: unknown;
   arguments?: Record<string, unknown>;
 }

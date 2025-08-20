@@ -29,8 +29,11 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
               tools: (tk.tools ?? [])
                 .map((tool: MCPTool) =>
                 ({
-                  // Use underscore to delimit namespace and tool name
-                  name: `${tk.namespace}_${tool.name}`,
+                  // Special-case: expose the canonical search tool as just "search"
+                  name: (tk.namespace === 'search' && tool.name === 'search')
+                    ? 'search'
+                    // Use underscore to delimit namespace and tool name by default
+                    : `${tk.namespace}_${tool.name}`,
                   description: tool.description ?? '',
                   inputSchema: getValidSchema(tool.input),
                   outputSchema: getValidSchema(tool.output)
@@ -59,17 +62,17 @@ const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParam
     return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } };
   }
 
+  // Normalize special-case: canonical search tool can be invoked as 'search'
+  const rawName: string = (params.name as string) ?? '';
+  const normalizedName = rawName === 'search' ? 'search_search' : rawName;
+
   // Support new underscore delimiter and accept legacy dot as a fallback
   let namespace: string | undefined;
   let toolName: string | undefined;
-  if (typeof params.name === 'string' && params.name.includes('_')) {
-    const idx = params.name.indexOf('_');
-    namespace = params.name.slice(0, idx);
-    toolName = params.name.slice(idx + 1);
-  } else if (typeof params.name === 'string' && params.name.includes('.')) {
-    const idx = params.name.indexOf('.');
-    namespace = params.name.slice(0, idx);
-    toolName = params.name.slice(idx + 1);
+  if (normalizedName.includes('_')) {
+    const idx = normalizedName.indexOf('_');
+    namespace = normalizedName.slice(0, idx);
+    toolName = normalizedName.slice(idx + 1);
   }
   if (!namespace || !toolName) {
     return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected params.name as "namespace_tool"' } };
