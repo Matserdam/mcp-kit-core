@@ -95,9 +95,9 @@ export type ResourceUriTemplate = string;
 export type MCPResourceTemplateDescriptor = {
   uriTemplate: ResourceUriTemplate;
   name: string;
-  title?: string;
-  description?: string;
-  mimeType?: string;
+  title: string;
+  description: string;
+  mimeType: string;
 };
 export interface MCPResourceTemplateProvider<TContext = unknown> {
   descriptor: MCPResourceTemplateDescriptor;
