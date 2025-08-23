@@ -9,7 +9,7 @@ export interface MCPServerOptions {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult | MCPResourceTemplatesListResult;
   error?: {
     code: number;
     message: string;
@@ -25,11 +25,13 @@ export type MCPToolsCallParams = {
 
 // Method-specific params (loose unions to preserve backward compatibility)
 export type MCPPromptGetParams = { name: string; arguments?: Record<string, unknown> } | Record<string, unknown>;
-export type MCPResourceReadParams = { uri: string } | Record<string, unknown>;
+export type ResourceProtocol = `${string}://`;
+export type ResourceUri = `${ResourceProtocol}${string}`;
+export type MCPResourceReadParams = { uri: ResourceUri } | Record<string, unknown>;
 
 export type MCPRequest = {
   id: string | number | null;
-  method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list';
+  method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list' | 'resources/templates/list';
   params?: Record<string, unknown> | undefined;
   error?: Record<string, unknown>;
 } | {
@@ -113,7 +115,15 @@ export type MCPPROMPTSGetResult = {
 
 // Resources list result per MCP spec
 export type MCPResourcesListResult = {
-  resources: any[]
+  resources: Array<{
+    uri: ResourceUri;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+    size?: number;
+  }>;
+  nextCursor?: string;
 }
 
 // Core content item variants the MCP clients expect
@@ -177,7 +187,7 @@ export type ContentItem = ContentText
 
 // Resource content entries for resources/read
 export type MCPResourceContent = {
-  uri: string
+  uri: ResourceUri
   name?: string
   title?: string
   description?: string
@@ -190,4 +200,15 @@ export type MCPResourceContent = {
 // Result for resources/read calls per MCP spec
 export type MCPResourceReadResult = {
   contents: MCPResourceContent[]
+}
+
+// Templates list result per MCP spec
+export type MCPResourceTemplatesListResult = {
+  resourceTemplates: Array<{
+    uriTemplate: string;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+  }>;
 }

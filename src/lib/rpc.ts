@@ -1,8 +1,12 @@
-import { MCPRequest, MCPResponse, MCPToolsCallParams, MCPToolCallResult } from "../types/server";
+import { MCPRequest, MCPResponse, MCPToolsCallParams, MCPToolCallResult, MCPResourceReadParams } from "../types/server";
 import { MCPPromptDef, MCPTool, MCPToolkit } from "../types/toolkit";
 import { getValidSchema } from "../utils";
 
 // No helper needed; arguments are already provided in the correct shape
+
+import { handleResourcesList } from './handlers/resources/list';
+import { handleResourcesRead } from './handlers/resources/read';
+import { handleResourceTemplatesList } from './handlers/resources/templates.list';
 
 export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Promise<MCPResponse> => {
   const { id, method, params } = request;
@@ -81,16 +85,17 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
       console.log({ result });
       return result;
     }
-    case 'resources/list':
-      return { jsonrpc: '2.0', id, result: { resources: [] } as any };
+    case 'resources/list': {
+      return handleResourcesList(id, toolkits);
+    }
+    case 'resources/templates/list': {
+      return handleResourceTemplatesList(id, toolkits);
+    }
     case 'resources/read': {
-      const uri = (params as any)?.uri as string | undefined;
-      if (!uri) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected uri' } };
-      // Return an empty contents array to satisfy protocol shape
-      return { jsonrpc: '2.0', id, result: { contents: [] } };
+      return handleResourcesRead(id, params as MCPResourceReadParams, toolkits, { requestId: id });
     }
     case 'tools/call':
-      return handleToolCall(request, toolkits);
+      return handleToolCall(request as any, toolkits);
 
     default:
       return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } };

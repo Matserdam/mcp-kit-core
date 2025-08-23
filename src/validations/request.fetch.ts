@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { MCPRequest, MCPToolsCallParams } from '../types/server';
 
-const allowedMethods = ['initialize', 'notifications/initialized', 'tools/list', 'tools/call', 'prompts/list', 'prompts/get', 'resources/list', 'resources/read'] as const;
+const allowedMethods = ['initialize', 'notifications/initialized', 'tools/list', 'tools/call', 'prompts/list', 'prompts/get', 'resources/list', 'resources/read', 'resources/templates/list'] as const;
 export type AllowedFetchMethod = typeof allowedMethods[number];
 
 const zCommonParams = z.object({

@@ -7,4 +7,5 @@ export type * from './types/stdio';
 export type * from './types/pokemon';
 export type * from './types/search';
 
+export { createMCPResourceProvider, createMCPResourceTemplateProvider } from './lib/factories/resources';
 

@@ -20,6 +20,8 @@ describe('MCPServer', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json?.result?.capabilities?.tools).toStrictEqual({ listChanged: true });
+    expect(json?.result?.capabilities?.prompts).toStrictEqual({ listChanged: false });
+    expect(json?.result?.capabilities?.resources).toStrictEqual({ listChanged: false });
   });
 
   it('tools/list returns tool metadata with namespace', async () => {

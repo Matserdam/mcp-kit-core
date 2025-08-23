@@ -2,20 +2,20 @@
 
 ## Unreleased
 
-- Breaking: Tool names now use underscore delimiter `namespace_tool` instead of dot `namespace.tool`.
-  - Reason: Improve compatibility with clients that restrict dots in tool name regexes.
-  - Note: Server currently enforces underscores for tool calls; legacy dot-form is not supported.
-- Core: `initialize` now echoes client's `protocolVersion` if provided (spec alignment).
-- Core: Implemented MCP Prompts and Resources minimal handlers:
-  - `prompts/list` and `prompts/get` (namespaced as `namespace_prompt`)
-  - `resources/list` and `resources/read` (returns empty `contents` array for now)
-- Core: Canonical tools are auto-listed when not provided by any toolkit:
-  - `search` (input requires `{ query: string }`, returns empty results as `{ type: 'text' }` for now)
-  - `fetch` (input `{ id: string, uri?: string }`, returns a `{ type: 'resource_link' }` pointing to the resolved URI)
-  - Note: Canonical tool calls are accepted as plain names `search` and `fetch` (no namespacing).
-- Types: Removed `video` from content union; supported types include `text`, `image`, `audio`, `resource_link`, and `resource`.
-- Examples/Docs: Updated EPIC-006 stories and examples to reflect prompts/resources and canonical tools.
-- Tests: Added basic tests for prompts (`prompts/list`, `prompts/get`) and resources (`resources/list`, `resources/read`).
+- Breaking: Tools listed/called as `namespace_tool` (underscore), not `namespace.tool`.
+- Core: `initialize` echoes requested `protocolVersion` (if provided).
+- Core: Prompts minimal support: `prompts/list`, `prompts/get`.
+- Core: Resources full MVP implemented per 2025-06-18 spec:
+  - Handlers under `src/lib/handlers/resources/`: `list`, `read`, `templates.list`, each returns full MCPResponse.
+  - `resources/list` aggregates toolkit providers; omits `nextCursor` when not paginating.
+  - `resources/read` resolves concrete providers first, then templates; errors: `-32602` invalid params, `-32002` not found.
+  - `resources/templates/list` lists template descriptors from toolkits.
+  - Server-owned `uriTemplate` matching with `{var}` and `{*rest}` placeholders; passes extracted params on `context.params` to template `read`.
+- Types: Added `ResourceProtocol`, `ResourceUri`, `MCPResourceTemplatesListResult` and refined resource types.
+- Toolkit Types: Added `resources`, `resourceTemplates`, and prefixed init types `MCPResourceProviderInit`, `MCPResourceTemplateProviderInit`.
+- DX Factories: `createMCPResourceProvider`, `createMCPResourceTemplateProvider` exported from public API.
+- Docs: README Resources section expanded with `uriTemplate` placeholders and factory examples.
+- Tests: Coverage for provider mapping, read via provider and template, error cases, and templates list; factories used in tests.
 
 ## 0.0.0 - 2025-08-18
 

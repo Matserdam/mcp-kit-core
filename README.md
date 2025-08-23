@@ -83,3 +83,55 @@ Then in the Inspector UI:
 
 - Tools are listed and called using underscore-delimited names: `namespace_tool`.
 - Rationale: some MCP clients (e.g., Claude) expect regexes that disallow dots in tool names. Using underscores avoids compatibility issues.
+
+### Resources (MVP)
+
+Implements `resources/list` and `resources/read` per MCP spec (2025-06-18):
+- `initialize` advertises `capabilities.resources = { listChanged: false }`.
+- `resources/list` returns `{ resources: [] }` (no `nextCursor` when not paginating).
+- `resources/read` accepts `{ uri }` and returns `{ contents: [] }` by default.
+
+Types (SDK):
+
+```ts
+import type { ResourceUri, MCPResourceReadResult } from '@mcp-kit/core';
+
+interface MCPResourceProvider<TContext = unknown> {
+  uri: ResourceUri;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+  size?: number;
+  read(context: TContext): Promise<MCPResourceReadResult> | MCPResourceReadResult;
+}
+```
+
+### Resource Templates and uriTemplate placeholders
+
+Server owns template matching. Define templates on the toolkit; the server resolves `{uri}`s against `uriTemplate`.
+
+- Placeholder forms:
+  - `{var}`: matches one path segment (no `/`). Example: `https://api.example.com/users/{id}`
+  - `{*rest}`: matches the remainder. Example: `file:///{*path}`
+- On match, the server calls `template.read(uri, context)` and includes extracted params on the context under `context.params`.
+
+Factories for convenience:
+
+```ts
+import { createMCPResourceProvider, createMCPResourceTemplateProvider } from '@mcp-kit/core';
+
+const readme = createMCPResourceProvider({
+  uri: 'file:///project/README.md',
+  name: 'README.md',
+  async read() { return { contents: [{ uri: 'file:///project/README.md', text: '# Project' }] }; },
+});
+
+const files = createMCPResourceTemplateProvider({
+  descriptor: { uriTemplate: 'file:///{*path}', name: 'Project Files' },
+  async read(uri, ctx) {
+    const path = ctx.params?.path ?? '';
+    return { contents: [{ uri, name: path.split('/').pop() ?? 'file', text: '' }] };
+  },
+});
+```

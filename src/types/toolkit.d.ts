@@ -1,5 +1,5 @@
 import type { ZodTypeAny } from 'zod';
-import type { MCPToolCallResult } from './server';
+import type { MCPToolCallResult, MCPResourceReadResult, ResourceUri } from './server';
 
 export type MCPJSONSchema = {
   $id?: string;
@@ -69,6 +69,46 @@ export type MCPPromptCallMessagesResult = Array<MCPMessage>;
 
 export type MCPMessage = { role: 'user' | 'assistant' | 'system'; content: { type: 'text'; text: string } }
 
+// Resource provider: single, read-only resource exposure (MVP)
+export interface MCPResourceProvider<TContext = unknown> {
+  uri: ResourceUri;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+  size?: number;
+  read(context: TContext): Promise<MCPResourceReadResult> | MCPResourceReadResult;
+}
+
+export type MCPResourceProviderInit<TContext = unknown> = {
+  uri: ResourceUri;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+  size?: number;
+  read: (context: TContext) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
+};
+
+// Templates
+export type ResourceUriTemplate = string;
+export type MCPResourceTemplateDescriptor = {
+  uriTemplate: ResourceUriTemplate;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+};
+export interface MCPResourceTemplateProvider<TContext = unknown> {
+  descriptor: MCPResourceTemplateDescriptor;
+  read(uri: ResourceUri, context: TContext): Promise<MCPResourceReadResult> | MCPResourceReadResult;
+}
+
+export type MCPResourceTemplateProviderInit<TContext = unknown> = {
+  descriptor: MCPResourceTemplateDescriptor;
+  read: (uri: ResourceUri, context: TContext) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
+};
+
 export interface MCPToolkit<TContext = unknown> {
   namespace: string;
   description?: string;
@@ -76,6 +116,8 @@ export interface MCPToolkit<TContext = unknown> {
   tools?: Array<MCPTool<TContext, unknown>>;
   prompts?: Array<MCPPromptDef>;
   createContext?(init: MCPToolkitInit): Promise<TContext> | TContext;
+  resources?: Array<MCPResourceProvider<TContext>>;
+  resourceTemplates?: Array<MCPResourceTemplateProvider<TContext>>;
 }
 
 
