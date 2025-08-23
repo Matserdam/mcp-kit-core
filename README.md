@@ -79,6 +79,69 @@ Then in the Inspector UI:
   - List tools: `{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }`
   - Call a tool: `{ "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "demo_echo", "params": { "msg": "hi" } } }`
 
+## Canonical tools: search and fetch
+
+The server exposes two canonical tools without a namespace:
+- `search`: traverses toolkit resources and resource templates and returns a text summary + `resource_link` items.
+- `fetch`: resolves a URI via toolkit resources/templates when possible and returns in-band `resource` content; otherwise falls back to a `resource_link`.
+
+### search (Story-033)
+
+Input schema (Zod):
+
+```ts
+{
+  query: string;             // required
+  topK?: number;             // optional, max 100
+  site?: string;             // optional, host filter substring
+  timeRange?: 'day'|'week'|'month'|'year'; // optional
+}
+```
+
+Behavior:
+- Traverses all toolkits' `resources` and `resourceTemplates`.
+- Matches items if `query` appears in `name`/`title`/`description`/`uri`.
+- If `site` is provided, also requires the host to include `site`.
+- Limits to `topK` resource links when provided.
+- Returns:
+  - A `text` item summarizing counts and top matches
+  - One `resource_link` per matched resource (up to `topK`)
+  - Optional `structuredContent` with `{ results: [{ title, url, snippet? }], templates, total }`
+
+Example call:
+
+```json
+{ "jsonrpc":"2.0", "id": 10, "method":"tools/call", "params": { "name": "search", "arguments": { "query": "readme", "site": "githubusercontent", "topK": 3 } } }
+```
+
+### fetch (Story-034)
+
+Input schema (Zod):
+
+```ts
+{
+  id: string;    // required; used as name, and as URI if it looks like a URL
+  uri?: string;  // optional explicit URI to fetch/resolve
+}
+```
+
+Resolution order:
+1) Exact match against toolkit `resources` by `uri`, convert first returned content to a `resource` item.
+2) Match against toolkit `resourceTemplates` by `uriTemplate`, convert first returned content to a `resource` item.
+3) Fallback to a single `resource_link` pointing to the URI.
+
+Example calls:
+
+```json
+{ "jsonrpc":"2.0", "id": 11, "method":"tools/call", "params": { "name": "fetch", "arguments": { "id": "pikachu", "uri": "https://cdn.example.com/pikachu.png" } } }
+```
+
+Returns (typical):
+
+```json
+{ "jsonrpc":"2.0", "id": 11, "result": { "content": [ { "type":"resource", "resource": { "uri":"https://cdn.example.com/pikachu.png", "name":"pikachu" } } ] } }
+```
+
 ### Tool name delimiter policy
 
 - Tools are listed and called using underscore-delimited names: `namespace_tool`.
@@ -115,6 +178,8 @@ Server owns template matching. Define templates on the toolkit; the server resol
   - `{var}`: matches one path segment (no `/`). Example: `https://api.example.com/users/{id}`
   - `{*rest}`: matches the remainder. Example: `file:///{*path}`
 - On match, the server calls `template.read(uri, context)` and includes extracted params on the context under `context.params`.
+
+These templates are used by both `resources/read` and the canonical `search`/`fetch` tools.
 
 Factories for convenience:
 
