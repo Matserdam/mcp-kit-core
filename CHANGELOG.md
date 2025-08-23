@@ -33,6 +33,13 @@
 - Examples: Pokémon example reorganized into `tools/`, `resources/`, `templates/`, `prompts/`; custom schemes `pokefront://`, `pokeback://`, `pokecry://`; template/provider implementations with Zod; local tests for tools, resources, templates, prompts, and canonical tools.
 - Tests: Added core tests for canonical tools (`canonical.tools.spec.ts`, `canonical.fetch.spec.ts`).
 
+- Core: Ping/Heartbeat support per MCP 2025-06-18:
+  - JSON-RPC method `ping` returns empty `{}` result; not a tool
+  - Implemented in handlers: `src/lib/handlers/ping.ts` and delegated by RPC
+  - HTTP: supported for JSON and SSE; stdio: NDJSON line
+  - Types: `MCPPingResult` added; fetch validator allows `ping`
+  - Docs: README and examples include ping usage
+
 ## 0.0.0 - 2025-08-18
 
 ### Added
