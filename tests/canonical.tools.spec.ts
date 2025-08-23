@@ -70,13 +70,13 @@ describe('Canonical tools: search and fetch', () => {
     expect(content[0].resource.blob).toBe('BASE64');
   });
 
-  it('fetch falls back to resource_link when no provider/template matches', async () => {
+  it('fetch falls back to empty content when no provider/template matches', async () => {
     const target = 'https://nowhere.invalid/file.bin';
     const req = { id: 4, method: 'tools/call', params: { name: 'fetch', arguments: { id: target } } } as MCPRequest;
     const res = await handleRPC(req, []);
     const content = (res as any).result.content as any[];
-    expect(content[0].type).toBe('resource_link');
-    expect(content[0].uri).toBe(target);
+    expect(Array.isArray(content)).toBe(true);
+    expect(content.length).toBe(0);
   });
 });
 
