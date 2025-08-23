@@ -9,7 +9,7 @@ export interface MCPServerOptions {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult | MCPResourceTemplatesListResult;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult | MCPResourceTemplatesListResult | MCPNotificationAckResult;
   error?: {
     code: number;
     message: string;
@@ -212,3 +212,6 @@ export type MCPResourceTemplatesListResult = {
     mimeType?: string;
   }>;
 }
+
+// Notification acknowledgement result
+export type MCPNotificationAckResult = { ok: true };

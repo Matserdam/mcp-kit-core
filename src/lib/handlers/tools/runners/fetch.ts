@@ -1,0 +1,74 @@
+import type { MCPResponse, MCPToolsCallParams, MCPToolCallResult, MCPResourceReadResult, ResourceUri } from '../../../../types/server';
+import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../../types/toolkit';
+import { uriMatchesTemplate } from '../../resources/util';
+
+export const runFetch = (
+  id: string | number | null,
+  params: MCPToolsCallParams,
+  toolkits?: MCPToolkit[]
+): MCPResponse => {
+  const args: unknown = params.arguments ?? {};
+  const argsObj = (typeof args === 'object' && args !== null) ? args as Record<string, unknown> : {};
+  const resId: string | undefined = typeof argsObj.id === 'string' ? argsObj.id : undefined;
+  const uriArg: string | undefined = typeof argsObj.uri === 'string' ? argsObj.uri : undefined;
+  if (!resId || resId.length === 0) {
+    return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected { id: string, uri?: string }' } };
+  }
+  const targetUri = uriArg && uriArg.length > 0
+    ? uriArg
+    : (resId.startsWith('http://') || resId.startsWith('https://'))
+      ? resId
+      : '';
+  if (!targetUri) {
+    return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: provide a resolvable uri or use id as a url' } };
+  }
+  // Resolve via resource providers/templates if available
+  if (toolkits && toolkits.length > 0) {
+    const viaProviders = readViaProviders(id, targetUri, toolkits);
+    if (viaProviders) return viaProviders;
+  }
+  // Fallback: simple resource_link
+  const result: MCPToolCallResult = { content: [{ type: 'resource_link', name: resId, uri: targetUri }] };
+  return { jsonrpc: '2.0', id, result };
+};
+
+const readViaProviders = (
+  id: string | number | null,
+  uri: string,
+  toolkits: MCPToolkit[]
+): MCPResponse | null => {
+  const providers: Array<MCPResourceProvider<unknown>> = toolkits.flatMap((tk) => tk.resources ?? []);
+  const provider = providers.find((p) => p.uri === (uri as ResourceUri));
+  if (provider) {
+    // Best-effort read without context for canonical runner
+    try {
+      const result = (provider.read as any)({}) as MCPResourceReadResult | Promise<MCPResourceReadResult>;
+      const contents = (result as any).contents ?? [];
+      const linkFallback: MCPToolCallResult = { content: [{ type: 'resource_link', name: provider.name, uri }] };
+      if (!Array.isArray(contents) || contents.length === 0) return { jsonrpc: '2.0', id, result: linkFallback };
+      const first = contents[0];
+      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource: first.text ? { text: first.text, name: first.name, mimeType: first.mimeType } : first.blob ? { blob: first.blob, name: first.name, mimeType: first.mimeType! } : { uri: first.uri, name: first.name, mimeType: first.mimeType } }] };
+      return { jsonrpc: '2.0', id, result: toolResult };
+    } catch {
+      return { jsonrpc: '2.0', id, result: { content: [{ type: 'resource_link', name: provider.name, uri }] } };
+    }
+  }
+  const templates: Array<MCPResourceTemplateProvider<unknown>> = toolkits.flatMap((tk) => tk.resourceTemplates ?? []);
+  for (const tpl of templates) {
+    const { ok } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
+    if (!ok) continue;
+    try {
+      const result = (tpl.read as any)(uri as ResourceUri, {}) as MCPResourceReadResult | Promise<MCPResourceReadResult>;
+      const contents = (result as any).contents ?? [];
+      if (!Array.isArray(contents) || contents.length === 0) continue;
+      const first = contents[0];
+      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource: first.text ? { text: first.text, name: first.name, mimeType: first.mimeType } : first.blob ? { blob: first.blob, name: first.name, mimeType: first.mimeType! } : { uri: first.uri, name: first.name, mimeType: first.mimeType } }] };
+      return { jsonrpc: '2.0', id, result: toolResult };
+    } catch {
+      continue;
+    }
+  }
+  return { jsonrpc: '2.0', id, result: { content: [{ type: 'resource_link', name: uri, uri }] } };
+};
+
+
