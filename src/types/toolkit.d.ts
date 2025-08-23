@@ -30,37 +30,52 @@ export type MCPJSONSchema = {
 export type MCPSchemaDef = { zod?: ZodTypeAny, jsonSchema?: MCPJSONSchema };
 
 export interface MCPToolkitInit {
-    requestId?: string | number | null;
+  requestId?: string | number | null;
 }
 
 export interface MCPTool<TContext = unknown, TInput = unknown> {
-    name: string;
-    description?: string;
-    input?: MCPSchemaDef;
-    output?: MCPSchemaDef;
-    run(input: TInput, context: TContext): Promise<MCPToolCallResult> | MCPToolCallResult;
+  name: string;
+  description?: string;
+  input?: MCPSchemaDef;
+  output?: MCPSchemaDef;
+  run(input: TInput, context: TContext): Promise<MCPToolCallResult> | MCPToolCallResult;
 }
 
 export type MCPToolRunner<TContext = unknown> = (
-    input: unknown,
-    context: TContext
+  input: unknown,
+  context: TContext
 ) => Promise<unknown>;
 
 export type MCPToolMiddleware<TContext = unknown> = (
-    next: MCPToolRunner<TContext>,
-    info: { toolkit: MCPToolkit<TContext>; tool: MCPTool<TContext, unknown> }
+  next: MCPToolRunner<TContext>,
+  info: { toolkit: MCPToolkit<TContext>; tool: MCPTool<TContext, unknown> }
 ) => MCPToolRunner<TContext>;
 
 export interface MCPToolkitMiddleware<TContext = unknown> {
-    tools?: Array<MCPToolMiddleware<TContext>>;
+  tools?: Array<MCPToolMiddleware<TContext>>;
 }
 
+export interface MCPPromptDef<TContext = unknown, TInput = unknown> {
+  name: string;
+  title: string;
+  description?: string;
+  // Spec-style arguments metadata for prompts/list
+  arguments?: Array<{ name: string; description?: string; required?: boolean }>;
+  messages(input: TInput, context: TContext): Promise<MCPPromptCallMessagesResult>;
+}
+
+export type MCPPromptCallMessagesResult = Array<MCPMessage>;
+
+
+export type MCPMessage = { role: 'user' | 'assistant' | 'system'; content: { type: 'text'; text: string } }
+
 export interface MCPToolkit<TContext = unknown> {
-    namespace: string;
-    description?: string;
-    middleware?: MCPToolkitMiddleware<TContext>;
-    tools?: Array<MCPTool<TContext, unknown>>;
-    createContext?(init: MCPToolkitInit): Promise<TContext> | TContext;
+  namespace: string;
+  description?: string;
+  middleware?: MCPToolkitMiddleware<TContext>;
+  tools?: Array<MCPTool<TContext, unknown>>;
+  prompts?: Array<MCPPromptDef>;
+  createContext?(init: MCPToolkitInit): Promise<TContext> | TContext;
 }
 
 

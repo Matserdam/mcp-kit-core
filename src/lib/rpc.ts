@@ -1,6 +1,8 @@
-import { MCPRequest, MCPResponse, MCPToolsCallParams } from "../types/server";
-import { MCPTool, MCPToolkit } from "../types/toolkit";
+import { MCPRequest, MCPResponse, MCPToolsCallParams, MCPToolCallResult } from "../types/server";
+import { MCPPromptDef, MCPTool, MCPToolkit } from "../types/toolkit";
 import { getValidSchema } from "../utils";
+
+// No helper needed; arguments are already provided in the correct shape
 
 export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Promise<MCPResponse> => {
   const { id, method, params } = request;
@@ -21,31 +23,72 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
     case 'notifications/initialized':
       // Notification acknowledgement for client 'initialized'
       return { jsonrpc: '2.0', id, result: { ok: true } as any };
-    case 'tools/list':
+    case 'tools/list': {
+      const listed = toolkits
+        .flatMap((tk: MCPToolkit) => (tk.tools ?? []).map((tool: MCPTool) => ({
+          name: `${tk.namespace}_${tool.name}`,
+          description: tool.description ?? '',
+          inputSchema: getValidSchema(tool.input),
+          outputSchema: getValidSchema(tool.output),
+        })));
+      const seen = new Set<string>(listed.map(t => t.name));
+      if (!seen.has('search')) {
+        listed.push({
+          name: 'search',
+          description: 'Canonical search tool',
+          inputSchema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+          outputSchema: { type: 'object' },
+        });
+      }
+      if (!seen.has('fetch')) {
+        listed.push({
+          name: 'fetch',
+          description: 'Canonical fetch tool',
+          inputSchema: { type: 'object', properties: { id: { type: 'string' }, uri: { type: 'string' } }, required: ['id'] },
+          outputSchema: { type: 'object' },
+        });
+      }
+      return { jsonrpc: '2.0', id, result: { tools: listed } };
+    }
+    case 'prompts/list':
       return {
         jsonrpc: '2.0', id, result: {
-          tools: toolkits.flatMap((tk: MCPToolkit) => {
-            return {
-              tools: (tk.tools ?? [])
-                .map((tool: MCPTool) =>
-                ({
-                  // Special-case: expose the canonical search tool as just "search"
-                  name: (tk.namespace === 'search' && tool.name === 'search')
-                    ? 'search'
-                    // Use underscore to delimit namespace and tool name by default
-                    : `${tk.namespace}_${tool.name}`,
-                  description: tool.description ?? '',
-                  inputSchema: getValidSchema(tool.input),
-                  outputSchema: getValidSchema(tool.output)
-                }))
-            }
-          }).flatMap((t) => t.tools)
+          prompts: toolkits.flatMap((tk: MCPToolkit) => (tk.prompts ?? []).map((p: MCPPromptDef) => ({
+            name: `${tk.namespace}_${p.name}`,
+            title: p.title ?? p.name,
+            description: p.description ?? '',
+            arguments: p.arguments ?? [],
+          })))
+        } as any
+      };
+    case 'prompts/get': {
+      const name = (params as any)?.name as string | undefined;
+      if (!name) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected name' } };
+      const [ns, promptName] = name.includes('_') ? name.split('_', 2) : [undefined, undefined];
+      if (!ns || !promptName) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid name: expected namespace_prompt' } };
+      const tk = toolkits.find((t) => t.namespace === ns);
+      const prompt = tk?.prompts?.find((p) => p.name === promptName);
+      if (!prompt) return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Prompt not found' } };
+      console.log({ prompt });
+      const messages = await prompt.messages(params.arguments, tk?.createContext?.({ requestId: id }) ?? {});
+      console.log({ messages, content: messages[0].content });
+      const result: MCPResponse = {
+        jsonrpc: '2.0', id, result: {
+          description: prompt.description ?? '',
+          messages
         }
       };
-    case 'prompts/list':
-      return { jsonrpc: '2.0', id, result: { prompts: [] } as any };
+      console.log({ result });
+      return result;
+    }
     case 'resources/list':
       return { jsonrpc: '2.0', id, result: { resources: [] } as any };
+    case 'resources/read': {
+      const uri = (params as any)?.uri as string | undefined;
+      if (!uri) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected uri' } };
+      // Return an empty contents array to satisfy protocol shape
+      return { jsonrpc: '2.0', id, result: { contents: [] } };
+    }
     case 'tools/call':
       return handleToolCall(request, toolkits);
 
@@ -54,7 +97,7 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
   }
 }
 
-const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParams }, toolkits: MCPToolkit[]) : Promise<MCPResponse> => { 
+const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParams }, toolkits: MCPToolkit[]): Promise<MCPResponse> => {
   console.log(request);
   const { id, method, params } = request;
 
@@ -62,9 +105,37 @@ const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParam
     return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } };
   }
 
-  // Normalize special-case: canonical search tool can be invoked as 'search'
+  // Handle canonical library tools without namespace
   const rawName: string = (params.name as string) ?? '';
-  const normalizedName = rawName === 'search' ? 'search_search' : rawName;
+  if (rawName === 'search') {
+    const q = (params.arguments as any)?.query;
+    console.log({ arguments: params.arguments });
+    if (typeof q !== 'string' || q.length === 0) {
+      return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected { query: string }' } };
+    }
+    const result = { content: [{ type: 'text', text: JSON.stringify({ results: [] }) }] } as MCPToolCallResult;
+    return { jsonrpc: '2.0', id, result };
+  }
+  if (rawName === 'fetch') {
+    const args: any = params.arguments ?? {};
+    const resId: string | undefined = typeof args.id === 'string' ? args.id : undefined;
+    const uriArg: string | undefined = typeof args.uri === 'string' ? args.uri : undefined;
+    if (!resId || resId.length === 0) {
+      return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected { id: string, uri?: string }' } };
+    }
+    const targetUri = uriArg && uriArg.length > 0
+      ? uriArg
+      : (resId.startsWith('http://') || resId.startsWith('https://'))
+        ? resId
+        : '';
+    if (!targetUri) {
+      return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: provide a resolvable uri or use id as a url' } };
+    }
+    const result = { content: [{ type: 'resource_link', name: resId, uri: targetUri }] } as MCPToolCallResult;
+    return { jsonrpc: '2.0', id, result };
+  }
+
+  const normalizedName = rawName;
 
   // Support new underscore delimiter and accept legacy dot as a fallback
   let namespace: string | undefined;
@@ -97,7 +168,6 @@ const handleToolCall = async (request: MCPRequest & { params?: MCPToolsCallParam
     }
   }
 
-  const result = await tool.run(params.arguments, toolkit.createContext?.({ requestId: id }) ?? {});
   try {
     const result = await tool.run(
       params.arguments,

@@ -9,7 +9,7 @@ export interface MCPServerOptions {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPResourcesListResult;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult;
   error?: {
     code: number;
     message: string;
@@ -23,17 +23,31 @@ export type MCPToolsCallParams = {
   arguments?: Record<string, unknown>;
 }
 
+// Method-specific params (loose unions to preserve backward compatibility)
+export type MCPPromptGetParams = { name: string; arguments?: Record<string, unknown> } | Record<string, unknown>;
+export type MCPResourceReadParams = { uri: string } | Record<string, unknown>;
+
 export type MCPRequest = {
-    id: string | number | null;
-    method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list';
-    params?: Record<string, unknown> | undefined;
-    error?: Record<string, unknown>;
-  } | {
-    id: string | number | null;
-    method: 'tools/call';
-    params?: MCPToolsCallParams;
-    errror?: Record<string, unknown>;
-  };
+  id: string | number | null;
+  method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list';
+  params?: Record<string, unknown> | undefined;
+  error?: Record<string, unknown>;
+} | {
+  id: string | number | null;
+  method: 'tools/call';
+  params?: MCPToolsCallParams;
+  errror?: Record<string, unknown>;
+} | {
+  id: string | number | null;
+  method: 'prompts/get';
+  params: MCPPromptGetParams;
+  errror?: Record<string, unknown>;
+} | {
+  id: string | number | null;
+  method: 'resources/read';
+  params: MCPResourceReadParams;
+  errror?: Record<string, unknown>;
+};
 
 export type InitializeResult = {
   protocolVersion: string;
@@ -79,7 +93,22 @@ export type MCPToolsListResult = {
 
 // Prompts list result per MCP spec
 export type MCPPROMPTSListResult = {
-  prompts: any[]
+  prompts: {
+    name: string;
+    title?: string;
+    description?: string;
+    arguments?: Array<{ name: string; description?: string; required?: boolean }>;
+  }[]
+}
+
+export type MCPPROMPTMessage = {
+  role: 'user' | 'assistant' | 'system';
+  content: { type: 'text'; text: string };
+}
+
+export type MCPPROMPTSGetResult = {
+  description?: string;
+  messages: MCPPROMPTMessage[];
 }
 
 // Resources list result per MCP spec

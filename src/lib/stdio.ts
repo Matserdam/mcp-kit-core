@@ -51,7 +51,9 @@ export class StdioController implements MCPStdioController {
         start(controller) {
           const nodeIn = input as NodeJS.ReadStream;
           nodeIn.on('data', (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
-          nodeIn.on('end', () => controller.close());
+          nodeIn.on('end', () => {
+            try { controller.close(); } catch { /* ignore double close */ }
+          });
           nodeIn.on('error', (err: unknown) => controller.error(err));
         },
       });

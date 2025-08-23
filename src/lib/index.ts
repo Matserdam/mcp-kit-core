@@ -14,14 +14,6 @@ export class MCPServer {
   public constructor(options: MCPServerOptions) {
     this.options = options;
     this.options = this.options;
-
-    // DX/Spec hint: ensure a canonical search tool exists
-    const hasSearch = this.options.toolkits.some(
-      (tk) => tk.namespace === 'search' && (tk.tools ?? []).some((t: MCPTool) => t.name === 'search')
-    );
-    if (!hasSearch) {
-      console.warn('[mcp-kit] Tip: Expose a canonical search tool (namespace: "search", tool: "search") for maximum client compatibility. In the list this tool will show up as "search".');
-    }
   }
 
   // public readonly handleRPC = async (parsed: MCPRequest): Promise<MCPResponse> => {
