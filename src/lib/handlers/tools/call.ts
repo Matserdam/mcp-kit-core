@@ -3,6 +3,7 @@ import type { MCPToolkit } from '../../../types/toolkit';
 import { runToolkitTool } from './runners/toolkit';
 import { runSearch } from './runners/search';
 import { runFetch } from './runners/fetch';
+import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas';
 
 export const handleToolCall = async (
   request: MCPRequest & { params?: MCPToolsCallParams },
@@ -18,8 +19,16 @@ export const handleToolCall = async (
 
   switch (toolName) {
     case 'search':
+      {
+        const v = canonicalSearchInputSchema.safeParse(params.arguments);
+        if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
+      }
       return runSearch(id, params, toolkits);
     case 'fetch':
+      {
+        const v = canonicalFetchInputSchema.safeParse(params.arguments);
+        if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
+      }
       return runFetch(id, params, toolkits);
     default:
       return runToolkitTool(id, params, toolkits);

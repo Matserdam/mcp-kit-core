@@ -1,6 +1,7 @@
 import type { MCPResponse } from '../../../types/server';
 import type { MCPToolkit, MCPTool } from '../../../types/toolkit';
 import { getValidSchema } from '../../../utils';
+import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas';
 
 export const handleToolsList = (id: string | number | null, toolkits: MCPToolkit[]): MCPResponse => {
   const listed = toolkits
@@ -14,22 +15,13 @@ export const handleToolsList = (id: string | number | null, toolkits: MCPToolkit
   listed.push({
     name: 'search',
     description: 'Canonical search tool',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string' },
-        topK: { type: 'number' },
-        site: { type: 'string' },
-        timeRange: { type: 'string', enum: ['day', 'week', 'month', 'year'] },
-      },
-      required: ['query']
-    },
+    inputSchema: getValidSchema({ zod: canonicalSearchInputSchema }),
     outputSchema: { type: 'object' },
   });
   listed.push({
     name: 'fetch',
     description: 'Canonical fetch tool',
-    inputSchema: { type: 'object', properties: { id: { type: 'string' }, uri: { type: 'string' } }, required: ['id'] },
+    inputSchema: getValidSchema({ zod: canonicalFetchInputSchema }),
     outputSchema: { type: 'object' },
   });
 
