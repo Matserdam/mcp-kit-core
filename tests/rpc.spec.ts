@@ -14,6 +14,12 @@ describe('handleRPC', () => {
     expect((res as any).result.capabilities.tools.listChanged).toBe(true);
   });
 
+  it('responds to ping with empty result', async () => {
+    const req: MCPRequest = { id: 99, method: 'ping' } as MCPRequest;
+    const res = await handleRPC(req, []);
+    expect((res as any).result).toEqual({});
+  });
+
   it('lists tools with schemas', async () => {
     const tool: MCPTool = {
       name: 't',

@@ -40,6 +40,28 @@ describe('Streamable HTTP Accept handling', () => {
     expect(res.status).toBe(202);
   });
 
+  it('handles ping with empty result over JSON', async () => {
+    const server = new MCPServer({ toolkits: [] });
+    const req = makeReq({ jsonrpc: '2.0', id: 3, method: 'ping' }, { accept: 'application/json' });
+    const res = await server.fetch(req);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.result).toEqual({});
+  });
+
+  it('handles ping with SSE response frame', async () => {
+    const server = new MCPServer({ toolkits: [] });
+    const req = makeReq({ jsonrpc: '2.0', id: 4, method: 'ping' }, { accept: 'text/event-stream' });
+    const res = await server.fetch(req);
+    expect(res.status).toBe(200);
+    const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+    const chunk = await reader.read();
+    expect(chunk.done).toBe(false);
+    const text = new TextDecoder().decode(chunk.value);
+    expect(text).toContain('"result":{}');
+    await reader.cancel();
+  });
+
   it('acknowledges client responses with 202', async () => {
     const server = new MCPServer({ toolkits: [] });
     const req = makeReq({ jsonrpc: '2.0', result: { ok: true } }, { accept: 'application/json' });

@@ -9,7 +9,7 @@ export interface MCPServerOptions {
 export interface MCPResponse {
   jsonrpc: '2.0';
   id: string | number | null;
-  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult | MCPResourceTemplatesListResult | MCPNotificationAckResult;
+  result?: MCPToolCallResult | MCPToolsListResult | InitializeResult | MCPPROMPTSListResult | MCPPROMPTSGetResult | MCPResourcesListResult | MCPResourceReadResult | MCPResourceTemplatesListResult | MCPNotificationAckResult | MCPPingResult;
   error?: {
     code: number;
     message: string;
@@ -31,7 +31,7 @@ export type MCPResourceReadParams = { uri: ResourceUri } | Record<string, unknow
 
 export type MCPRequest = {
   id: string | number | null;
-  method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list' | 'resources/templates/list';
+  method: 'initialize' | 'notifications/initialized' | 'tools/list' | 'prompts/list' | 'resources/list' | 'resources/templates/list' | 'ping';
   params?: Record<string, unknown> | undefined;
   error?: Record<string, unknown>;
 } | {
@@ -215,3 +215,6 @@ export type MCPResourceTemplatesListResult = {
 
 // Notification acknowledgement result
 export type MCPNotificationAckResult = { ok: true };
+
+// Ping result: empty object per MCP spec
+export type MCPPingResult = Record<string, never>;

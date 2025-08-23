@@ -79,6 +79,26 @@ Then in the Inspector UI:
   - List tools: `{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }`
   - Call a tool: `{ "jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": { "name": "demo_echo", "params": { "msg": "hi" } } }`
 
+### Ping utility (JSON-RPC)
+
+Per MCP spec (2025-06-18), `ping` is a JSON-RPC request with no params and an empty result object.
+
+Example (HTTP JSON):
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "method": "ping" }
+```
+
+Response:
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "result": {} }
+```
+
+Notes:
+- Works over HTTP JSON and SSE. With `Accept: text/event-stream`, the server returns a single `data:` frame containing the same JSON.
+- Also works over stdio: send a single NDJSON line with the same payload and read one response line with `result: {}`.
+
 ## Canonical tools: search and fetch
 
 The server exposes two canonical tools without a namespace:
