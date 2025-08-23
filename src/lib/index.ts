@@ -71,7 +71,7 @@ export class MCPServer {
   public readonly fetch = async (request: Request): Promise<Response> => {
     const method = request.method.toUpperCase();
 
-    console.log('fetch', method);
+    
 
     const json = (data: unknown, init?: ResponseInit) => responseJson(data, init);
 
@@ -81,10 +81,10 @@ export class MCPServer {
     try {
       rpc = await request.json();
     } catch {
-      console.log('parse error');
+      
       return json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
     }
-    console.log({ rpc });
+    
     // Accept negotiation
     const accept = request.headers.get('accept') ?? '*/*';
     const wantsEventStream = /(^|,|\s)text\/event-stream(\s*;|\s|$)/i.test(accept);
@@ -97,7 +97,7 @@ export class MCPServer {
     }
     const parsed = parseFetchRpc(rpc);
     if ("error" in parsed) {
-      console.log('parse error 2', rpc, parsed);
+      
       return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
     }
     // Notification (no id provided by client payload)
