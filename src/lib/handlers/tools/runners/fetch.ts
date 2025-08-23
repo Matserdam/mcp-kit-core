@@ -2,11 +2,11 @@ import type { MCPResponse, MCPToolsCallParams, MCPToolCallResult, MCPResourceRea
 import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../../types/toolkit';
 import { uriMatchesTemplate } from '../../resources/util';
 
-export const runFetch = (
+export const runFetch = async (
   id: string | number | null,
   params: MCPToolsCallParams,
   toolkits?: MCPToolkit[]
-): MCPResponse => {
+): Promise<MCPResponse> => {
   const args: unknown = params.arguments ?? {};
   const argsObj = (typeof args === 'object' && args !== null) ? args as Record<string, unknown> : {};
   const resId: string | undefined = typeof argsObj.id === 'string' ? argsObj.id : undefined;
@@ -24,7 +24,7 @@ export const runFetch = (
   }
   // Resolve via resource providers/templates if available
   if (toolkits && toolkits.length > 0) {
-    const viaProviders = readViaProviders(id, targetUri, toolkits);
+    const viaProviders = await readViaProviders(id, targetUri, toolkits);
     if (viaProviders) return viaProviders;
   }
   // Fallback: empty content (no duplicate link echo)
@@ -32,22 +32,27 @@ export const runFetch = (
   return { jsonrpc: '2.0', id, result };
 };
 
-const readViaProviders = (
+const readViaProviders = async (
   id: string | number | null,
   uri: string,
   toolkits: MCPToolkit[]
-): MCPResponse | null => {
+): Promise<MCPResponse | null> => {
   const providers: Array<MCPResourceProvider<unknown>> = toolkits.flatMap((tk) => tk.resources ?? []);
   const provider = providers.find((p) => p.uri === (uri as ResourceUri));
   if (provider) {
     // Best-effort read without context for canonical runner
     try {
-      const result = (provider.read as any)({}) as MCPResourceReadResult | Promise<MCPResourceReadResult>;
-      const contents = (result as any).contents ?? [];
+      const result = await (provider.read as any)({});
+      const contents = (result as MCPResourceReadResult).contents ?? [];
       const linkFallback: MCPToolCallResult = { content: [{ type: 'resource_link', name: provider.name, uri }] };
       if (!Array.isArray(contents) || contents.length === 0) return { jsonrpc: '2.0', id, result: linkFallback };
       const first = contents[0];
-      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource: first.text ? { text: first.text, name: first.name, mimeType: first.mimeType } : first.blob ? { blob: first.blob, name: first.name, mimeType: first.mimeType! } : { uri: first.uri, name: first.name, mimeType: first.mimeType } }] };
+      const resource = first.text
+        ? { text: first.text, name: first.name, mimeType: first.mimeType }
+        : first.blob
+          ? { blob: first.blob, name: first.name, mimeType: first.mimeType! }
+          : { uri: first.uri, name: first.name, mimeType: first.mimeType };
+      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource }] };
       return { jsonrpc: '2.0', id, result: toolResult };
     } catch {
       return { jsonrpc: '2.0', id, result: { content: [{ type: 'resource_link', name: provider.name, uri }] } };
@@ -58,11 +63,16 @@ const readViaProviders = (
     const { ok } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
     if (!ok) continue;
     try {
-      const result = (tpl.read as any)(uri as ResourceUri, {}) as MCPResourceReadResult | Promise<MCPResourceReadResult>;
-      const contents = (result as any).contents ?? [];
+      const result = await (tpl.read as any)(uri as ResourceUri, {});
+      const contents = (result as MCPResourceReadResult).contents ?? [];
       if (!Array.isArray(contents) || contents.length === 0) continue;
       const first = contents[0];
-      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource: first.text ? { text: first.text, name: first.name, mimeType: first.mimeType } : first.blob ? { blob: first.blob, name: first.name, mimeType: first.mimeType! } : { uri: first.uri, name: first.name, mimeType: first.mimeType } }] };
+      const resource = first.text
+        ? { text: first.text, name: first.name, mimeType: first.mimeType }
+        : first.blob
+          ? { blob: first.blob, name: first.name, mimeType: first.mimeType! }
+          : { uri: first.uri, name: first.name, mimeType: first.mimeType };
+      const toolResult: MCPToolCallResult = { content: [{ type: 'resource', resource }] };
       return { jsonrpc: '2.0', id, result: toolResult };
     } catch {
       continue;
