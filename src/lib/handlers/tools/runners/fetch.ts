@@ -27,8 +27,8 @@ export const runFetch = (
     const viaProviders = readViaProviders(id, targetUri, toolkits);
     if (viaProviders) return viaProviders;
   }
-  // Fallback: simple resource_link
-  const result: MCPToolCallResult = { content: [{ type: 'resource_link', name: resId, uri: targetUri }] };
+  // Fallback: empty content (no duplicate link echo)
+  const result: MCPToolCallResult = { content: [] };
   return { jsonrpc: '2.0', id, result };
 };
 
@@ -68,7 +68,8 @@ const readViaProviders = (
       continue;
     }
   }
-  return { jsonrpc: '2.0', id, result: { content: [{ type: 'resource_link', name: uri, uri }] } };
+  // No resolution possible: return empty content
+  return { jsonrpc: '2.0', id, result: { content: [] } };
 };
 
 

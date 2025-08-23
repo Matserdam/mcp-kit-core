@@ -80,7 +80,7 @@ export const runSearch = (
   ];
   for (const r of limitedResources) {
     const display = r.name || r.title || r.uri;
-    content.push({ type: 'resource_link', name: display, uri: r.uri } as { type: 'resource_link'; name: string; uri: string });
+    content.push({ type: 'resource_link', name: display, uri: r.uri });
   }
 
   const structuredContent = {
