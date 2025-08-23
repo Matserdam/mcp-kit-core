@@ -168,12 +168,12 @@ const main = async () => {
   await Bun.write(outPath, JSON.stringify(report, null, 2));
 
   // Also print a short summary
-  console.log(`[stdio-perf] total=${TOTAL} concurrency=${CONCURRENCY} durationMs=${durationMs.toFixed(2)} throughputRps=${throughput.toFixed(2)}`);
-  console.log(`[stdio-perf] lat ms avg=${avg.toFixed(2)} p50=${p50.toFixed(2)} p95=${p95.toFixed(2)} p99=${p99.toFixed(2)} max=${max.toFixed(2)}`);
+  // console.log(`[stdio-perf] total=${TOTAL} concurrency=${CONCURRENCY} durationMs=${durationMs.toFixed(2)} throughputRps=${throughput.toFixed(2)}`);
+  // console.log(`[stdio-perf] lat ms avg=${avg.toFixed(2)} p50=${p50.toFixed(2)} p95=${p95.toFixed(2)} p99=${p99.toFixed(2)} max=${max.toFixed(2)}`);
 };
 
 main().catch((err) => {
-  console.error(err);
+  // console.error(err);
   process.exit(1);
 });
 
