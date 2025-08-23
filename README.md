@@ -126,9 +126,13 @@ Input schema (Zod):
 ```
 
 Resolution order:
-1) Exact match against toolkit `resources` by `uri`, convert first returned content to a `resource` item.
-2) Match against toolkit `resourceTemplates` by `uriTemplate`, convert first returned content to a `resource` item.
-3) Fallback to a single `resource_link` pointing to the URI.
+1) Exact match against toolkit `resources` by `uri` (provider wins if present), convert first returned content to a `resource` item.
+2) If no provider matched, match against toolkit `resourceTemplates` by `uriTemplate`, convert first returned content to a `resource` item.
+3) If neither matched, fallback to an empty `content` array.
+
+Notes:
+- Resolution is awaited (async-safe) for both providers and templates.
+- This same order applies to `resources/read` calls: providers are checked before templates.
 
 Example calls:
 
