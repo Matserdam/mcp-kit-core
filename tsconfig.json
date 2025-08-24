@@ -4,7 +4,7 @@
     "composite": false,
     "noEmit": true
   },
-  "include": ["src", "tests", "docs/specs/abstract-schema.md"]
+  "include": ["src", "tests", "docs/specs/abstract-schema.md", "compliance"]
 }
 
 

@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-08-24T03:05:24.879Z",
+  "totalTests": 2,
+  "passedTests": 2,
+  "failedTests": 0,
+  "warnings": 0,
+  "results": [
+    {
+      "testName": "JSON-RPC 2.0 Basic Structure",
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "testName": "MCP Method Validation",
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    }
+  ],
+  "summary": "Compliance: 2/2 tests passed (100.0%)"
+}

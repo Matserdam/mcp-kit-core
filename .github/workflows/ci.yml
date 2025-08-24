@@ -166,3 +166,19 @@ jobs:
         name: sbom
         path: bom.json
         retention-days: 30
+
+    - name: Run MCP Protocol Compliance Check
+      run: |
+        echo "🔍 Running MCP Protocol Compliance Check..."
+        
+        # Run the compliance validation script
+        bun run compliance/compliance-check.ts
+        
+        echo "✅ Protocol compliance check completed"
+    
+    - name: Upload Compliance Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: compliance-report
+        path: compliance-report.json
+        retention-days: 30
