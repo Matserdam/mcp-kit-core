@@ -1,4 +1,5 @@
 import type { MCPRequestWithHeaders } from '../../types/auth';
+import { debugLoggers } from '../debug';
 
 /**
  * Auth audit log event types
@@ -109,8 +110,8 @@ export class MCPAuthAuditLogger {
     try {
       await this.config.logger(entry);
     } catch (error) {
-      // Fallback to console if custom logger fails
-      console.error('[AUTH_AUDIT_ERROR]', 'Failed to log audit entry:', error);
+      // Fallback to debug logger if custom logger fails
+      debugLoggers.audit('Failed to log audit entry:', error);
       this.defaultLogger(entry);
     }
   }
@@ -168,8 +169,7 @@ export class MCPAuthAuditLogger {
    * Default logger implementation
    */
   private defaultLogger(entry: MCPAuthAuditEntry): void {
-    // eslint-disable-next-line no-console
-    console.log('[AUTH_AUDIT]', JSON.stringify(entry, null, 2));
+          debugLoggers.audit(JSON.stringify(entry, null, 2));
   }
 
   /**
@@ -232,7 +232,7 @@ export function createAuthAuditLog(
   
   // Use global logger
   globalAuthAuditLogger.log(event, details, severity, request).catch(error => {
-    console.error('[AUTH_AUDIT_ERROR]', 'Failed to log audit entry:', error);
+    debugLoggers.audit('Failed to log audit entry:', error);
   });
 }
 
@@ -256,8 +256,7 @@ export const auditLoggers = {
         critical: '\x1b[35m' // Magenta
       }[entry.severity];
       
-      console.log(`${color}[AUTH_AUDIT:${entry.severity.toUpperCase()}]\x1b[0m`, 
-        JSON.stringify(entry, null, 2));
+      debugLoggers.audit(`${color}[${entry.severity.toUpperCase()}]\x1b[0m ${JSON.stringify(entry, null, 2)}`);
     }
   }),
 
@@ -271,7 +270,7 @@ export const auditLoggers = {
     includeSensitiveData: false,
     logger: (entry) => {
       // In production, this would typically send to a structured logging service
-      console.log('[AUTH_AUDIT]', JSON.stringify({
+      debugLoggers.audit(JSON.stringify({
         timestamp: entry.timestamp,
         event: entry.event,
         severity: entry.severity,
@@ -300,8 +299,8 @@ export const auditLoggers = {
       // Example: Send to external logging service
       // await externalLoggingService.log(entry);
       
-      // For now, just log to console in structured format
-      console.log(JSON.stringify({
+      // For now, just log to debug in structured format
+      debugLoggers.audit(JSON.stringify({
         level: entry.severity,
         message: `Auth event: ${entry.event}`,
         correlationId: entry.correlationId,

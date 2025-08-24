@@ -10,6 +10,7 @@ import {
   type MCPOAuthTokenInfo
 } from '../src/lib/auth/oauth21';
 import { createAuthAuditLog } from '../src/lib/auth/audit-logger';
+import { debugLoggers } from '../src/lib/debug';
 
 describe('OAuth 2.1 Protocol Compliance', () => {
   describe('Resource Indicators (RFC 8707)', () => {
@@ -305,7 +306,7 @@ describe('OAuth 2.1 Protocol Compliance', () => {
 
   describe('Security Audit Logging', () => {
     it('should create audit log entries', () => {
-      const consoleSpy = vi.spyOn(console, 'log');
+      const debugSpy = vi.spyOn(debugLoggers, 'audit');
       
       const request = {
         id: 'audit-test-1',
@@ -318,11 +319,10 @@ describe('OAuth 2.1 Protocol Compliance', () => {
         scopes: ['read', 'write']
       }, request);
 
-      expect(consoleSpy).toHaveBeenCalled();
-      const logCall = consoleSpy.mock.calls[0];
-      expect(logCall[0]).toBe('[AUTH_AUDIT]');
+      expect(debugSpy).toHaveBeenCalled();
+      const logCall = debugSpy.mock.calls[0];
       
-      const auditEntry = JSON.parse(logCall[1] as string) as {
+      const auditEntry = JSON.parse(logCall[0] as string) as {
         event: string;
         details: { user: { id: string } };
         requestInfo: { method: string };
@@ -331,26 +331,26 @@ describe('OAuth 2.1 Protocol Compliance', () => {
       expect(auditEntry.details.user.id).toBe('user123');
       expect(auditEntry.requestInfo.method).toBe('tools/call');
       
-      consoleSpy.mockRestore();
+      debugSpy.mockRestore();
     });
 
     it('should handle audit logging without request', () => {
-      const consoleSpy = vi.spyOn(console, 'log');
+      const debugSpy = vi.spyOn(debugLoggers, 'audit');
       
       createAuthAuditLog('token_validation', { 
         error: 'missing_authorization_header' 
       });
 
-      expect(consoleSpy).toHaveBeenCalled();
-      const logCall = consoleSpy.mock.calls[0];
-      const auditEntry = JSON.parse(logCall[1] as string) as {
+      expect(debugSpy).toHaveBeenCalled();
+      const logCall = debugSpy.mock.calls[0];
+      const auditEntry = JSON.parse(logCall[0] as string) as {
         event: string;
         requestInfo?: unknown;
       };
       expect(auditEntry.event).toBe('token_validation');
       expect(auditEntry.requestInfo).toBeUndefined();
       
-      consoleSpy.mockRestore();
+      debugSpy.mockRestore();
     });
   });
 
