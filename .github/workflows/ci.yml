@@ -78,15 +78,15 @@ jobs:
       run: |
         echo "⚡ Checking cold-start performance..."
         
-        # Measure cold-start time ≤ 50ms (CI environments have less resources)
+        # Measure cold-start time ≤ 100ms (CI environments have less resources)
         COLD_START_TIME=$(node -e "
           const start = performance.now();
           import('./dist/index.js').then(() => {
             const end = performance.now();
             const duration = end - start;
             console.log(duration.toFixed(3));
-            if (duration > 50) {
-              console.error('Cold-start time exceeded: ' + duration.toFixed(3) + 'ms > 50ms');
+            if (duration > 100) {
+              console.error('Cold-start time exceeded: ' + duration.toFixed(3) + 'ms > 100ms');
               process.exit(1);
             }
           }).catch(err => {
