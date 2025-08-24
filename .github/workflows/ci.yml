@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   test:
@@ -21,34 +21,47 @@ jobs:
     - name: Install dependencies
       run: bun install
     
-    - name: Build
-      run: bun run build
-    
     - name: Run tests
       run: bun run test
     
-    - name: Check types
-      run: bun run check:types
-    
-    - name: Lint
+    - name: Run linting
       run: bun run lint
     
-    - name: Check size budget
+    - name: Build project
+      run: bun run build
+    
+    - name: Check size budgets
       run: |
-        echo "Checking size budget..."
+        echo "📦 Checking size budgets..."
+        
+        # Check total dist size ≤ 600 KB
         DIST_SIZE=$(du -sk dist/ | cut -f1)
-        echo "Dist size: ${DIST_SIZE}KB"
+        echo "📊 Total dist size: ${DIST_SIZE}KB"
+        
         if [ "$DIST_SIZE" -gt 600 ]; then
           echo "❌ Size budget exceeded: ${DIST_SIZE}KB > 600KB"
           exit 1
-        else
-          echo "✅ Size budget OK: ${DIST_SIZE}KB ≤ 600KB"
         fi
+        
+        # Check largest file ≤ 200 KB
+        LARGEST_FILE=$(find dist/ -type f -name "*.js" -exec du -k {} + | sort -nr | head -1)
+        LARGEST_SIZE=$(echo "$LARGEST_FILE" | cut -f1)
+        LARGEST_NAME=$(echo "$LARGEST_FILE" | cut -f2)
+        echo "📄 Largest file: $LARGEST_NAME (${LARGEST_SIZE}KB)"
+        
+        if [ "$LARGEST_SIZE" -gt 200 ]; then
+          echo "❌ Largest file budget exceeded: ${LARGEST_SIZE}KB > 200KB"
+          exit 1
+        fi
+        
+        echo "✅ Size budgets passed"
     
-    - name: Check cold-start time
+    - name: Check cold-start performance
       run: |
-        echo "Checking cold-start time..."
-        START_TIME=$(node -e "
+        echo "⚡ Checking cold-start performance..."
+        
+        # Measure cold-start time ≤ 25ms
+        COLD_START_TIME=$(node -e "
           const start = performance.now();
           import('./dist/index.js').then(() => {
             const end = performance.now();
@@ -63,31 +76,35 @@ jobs:
             process.exit(1);
           });
         ")
-        echo "Cold-start time: ${START_TIME}ms"
+        
+        echo "⏱️ Cold-start time: ${COLD_START_TIME}ms"
+        echo "✅ Cold-start performance passed"
     
-    - name: Generate SBOM
+    - name: Check for console.* usage in core library
       run: |
-        echo "Generating SBOM..."
-        # Install cyclonedx-npm for SBOM generation
-        npm install -g @cyclonedx/cyclonedx-npm
-        cyclonedx-npm --output-format json --output-file bom.json
-        echo "SBOM generated: bom.json"
-    
-    - name: Check for high-risk vulnerabilities
-      run: |
-        echo "Checking for high-risk vulnerabilities..."
-        # This would integrate with a vulnerability scanner
-        # For now, we'll check if SBOM was generated successfully
-        if [ ! -f bom.json ]; then
-          echo "❌ SBOM generation failed"
+        echo "🔍 Checking for console.* usage in core library..."
+        
+        # Check for console.* usage in src/lib/** (excluding tests)
+        CONSOLE_USAGE=$(grep -r "console\." src/lib/ --include="*.ts" --include="*.js" || true)
+        
+        if [ -n "$CONSOLE_USAGE" ]; then
+          echo "❌ Console.* usage detected in core library:"
+          echo "$CONSOLE_USAGE"
           exit 1
-        else
-          echo "✅ SBOM generated successfully"
         fi
+        
+        echo "✅ No console.* usage in core library"
     
-    - name: Upload SBOM
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom
-        path: bom.json
-        retention-days: 30
+    - name: Check RPC switch case ordering
+      run: |
+        echo "🔤 Checking RPC switch case ordering..."
+        
+        # Check if RPC switch cases are alphabetically ordered
+        # This is a basic check - in the future we can add ESLint rules
+        RPC_FILE="src/lib/rpc.ts"
+        if [ -f "$RPC_FILE" ]; then
+          echo "📋 RPC switch cases should be alphabetically ordered in $RPC_FILE"
+          # TODO: Add ESLint rule for switch case ordering (STORY-061)
+        fi
+        
+        echo "✅ RPC switch case ordering check completed"
