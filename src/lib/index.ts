@@ -1,8 +1,6 @@
-import type { InitializeResult, MCPRequest, MCPResponse, MCPServerOptions, MCPToolCallResult, MCPToolsListResult } from '../types/server';
+import type { MCPServerOptions } from '../types/server';
 import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
 import { StdioController } from './stdio';
-import { MCPTool, MCPToolkit } from '../types/toolkit';
-import { getValidSchema } from '../utils';
 import { parseFetchRpc } from '../validations/request.fetch';
 import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
@@ -13,7 +11,6 @@ export class MCPServer {
 
   public constructor(options: MCPServerOptions) {
     this.options = options;
-    this.options = this.options;
   }
 
   // public readonly handleRPC = async (parsed: MCPRequest): Promise<MCPResponse> => {
@@ -77,7 +74,7 @@ export class MCPServer {
 
     if (method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
-    let rpc: any;
+    let rpc: unknown;
     try {
       rpc = await request.json();
     } catch {
@@ -91,7 +88,7 @@ export class MCPServer {
     const wantsJson = /(^|,|\s)application\/json(\s*;|\s|$)/i.test(accept) || accept.includes('*/*');
 
     // If client sent a JSON-RPC response payload (not a request), ack with 202
-    const isClientResponse = rpc && typeof rpc === 'object' && rpc.jsonrpc === '2.0' && !('method' in rpc) && (('result' in rpc) || ('error' in rpc));
+    const isClientResponse = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && !('method' in rpc) && (('result' in rpc) || ('error' in rpc));
     if (isClientResponse) {
       return new Response(null, { status: 202 });
     }
@@ -101,7 +98,7 @@ export class MCPServer {
       return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
     }
     // Notification (no id provided by client payload)
-    const isNotification = rpc && typeof rpc === 'object' && rpc.jsonrpc === '2.0' && typeof rpc.method === 'string' && !('id' in rpc);
+    const isNotification = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && typeof (rpc as Record<string, unknown>).method === 'string' && !('id' in rpc);
     if (isNotification) {
       void handleRPC(parsed, this.options.toolkits);
       return new Response(null, { status: 202 });

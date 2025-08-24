@@ -1,4 +1,4 @@
-import { MCPJSONSchema } from "./toolkit";
+import { MCPJSONSchema, MCPToolkit } from "./toolkit";
 
 export interface MCPServerOptions {
   toolkits: Array<MCPToolkit>;

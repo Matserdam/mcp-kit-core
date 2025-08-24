@@ -25,7 +25,7 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
     case 'ping':
       return handlePing(id);
     case 'prompts/get':
-      return handlePromptsGet(id, params as unknown as any, toolkits);
+      return handlePromptsGet(request, toolkits);
     case 'prompts/list':
       return handlePromptsList(id, toolkits);
     case 'resources/list':
@@ -35,7 +35,7 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
     case 'resources/templates/list':
       return handleResourceTemplatesList(id, toolkits);
     case 'tools/call':
-      return handleToolCall(request as any, toolkits);
+      return handleToolCall(request, toolkits);
     case 'tools/list':
       return handleToolsList(id, toolkits);
 

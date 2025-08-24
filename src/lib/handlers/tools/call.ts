@@ -6,7 +6,7 @@ import { runFetch } from './runners/fetch';
 import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas';
 
 export const handleToolCall = async (
-  request: MCPRequest & { params?: MCPToolsCallParams },
+  request: MCPRequest,
   toolkits: MCPToolkit[]
 ): Promise<MCPResponse> => {
   const { id, params } = request;
@@ -15,23 +15,28 @@ export const handleToolCall = async (
     return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } };
   }
 
-  const toolName: string = (params.name as unknown as string) ?? '';
+  // Type guard to ensure this is a tools/call request
+  if (request.method !== 'tools/call') {
+    return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Invalid method for tools/call handler' } };
+  }
+
+  const toolName: string = (params as MCPToolsCallParams).name ?? '';
 
   switch (toolName) {
     case 'search':
       {
-        const v = canonicalSearchInputSchema.safeParse(params.arguments);
+        const v = canonicalSearchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
         if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
       }
-      return runSearch(id, params, toolkits);
+      return runSearch(id, params as MCPToolsCallParams, toolkits);
     case 'fetch':
       {
-        const v = canonicalFetchInputSchema.safeParse(params.arguments);
+        const v = canonicalFetchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
         if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
       }
-      return runFetch(id, params, toolkits);
+      return runFetch(id, params as MCPToolsCallParams, toolkits);
     default:
-      return runToolkitTool(id, params, toolkits);
+      return runToolkitTool(id, params as MCPToolsCallParams, toolkits);
   }
 };
 
