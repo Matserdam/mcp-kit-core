@@ -6,12 +6,25 @@ import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
 import { responseSSEOnce } from './response/sse';
 import { defaultAuthMiddlewareManager, createAuthContext } from './auth';
+import { MCPDiscoveryHandler, createDiscoveryResponse, createDiscoveryError } from './auth/discovery';
 
 export class MCPServer {
   private readonly options: MCPServerOptions;
+  private discoveryHandler?: MCPDiscoveryHandler;
 
   public constructor(options: MCPServerOptions) {
     this.options = options;
+    
+    // Initialize discovery handler if configuration is provided
+    if (options.discovery) {
+      this.discoveryHandler = new MCPDiscoveryHandler(options.discovery);
+      
+      // Validate discovery configuration
+      const validation = this.discoveryHandler.validateConfiguration();
+      if (!validation.valid) {
+        throw new Error(`Invalid discovery configuration: ${validation.errors.join(', ')}`);
+      }
+    }
   }
 
   // public readonly handleRPC = async (parsed: MCPRequest): Promise<MCPResponse> => {
@@ -68,8 +81,55 @@ export class MCPServer {
 
   public readonly fetch = async (request: Request): Promise<Response> => {
     const method = request.method.toUpperCase();
+    const url = new URL(request.url);
 
     const json = (data: unknown, init?: ResponseInit) => responseJson(data, init);
+
+    // Handle discovery endpoints
+    if (this.discoveryHandler && this.options.discovery?.enableDiscoveryEndpoints !== false) {
+      // Handle CORS preflight for discovery endpoints
+      if (method === 'OPTIONS' && url.pathname.startsWith('/.well-known/')) {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        });
+      }
+
+      // Handle authorization server discovery endpoint (RFC 8414)
+      if (method === 'GET' && url.pathname === '/.well-known/oauth-authorization-server') {
+        try {
+          const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
+          return createDiscoveryResponse(metadata);
+        } catch (error) {
+          return createDiscoveryError({
+            error: 'server_error',
+            error_description: 'Failed to generate authorization server metadata'
+          });
+        }
+      }
+
+      // Handle protected resource discovery endpoint (RFC 9728)
+      if (method === 'GET' && url.pathname === '/.well-known/oauth-protected-resource') {
+        try {
+          const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
+          return createDiscoveryResponse(metadata);
+        } catch (error) {
+          return createDiscoveryError({
+            error: 'server_error',
+            error_description: 'Failed to generate protected resource metadata'
+          });
+        }
+      }
+
+      // Return 405 for non-GET requests to discovery endpoints
+      if (url.pathname.startsWith('/.well-known/')) {
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+    }
 
     if (method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
@@ -99,11 +159,28 @@ export class MCPServer {
     try {
       const authContext = await createAuthContext(parsed, null, this.options.toolkits, defaultAuthMiddlewareManager);
       if (!authContext.authenticated) {
-        return json({ 
-          jsonrpc: '2.0', 
-          id: parsed.id, 
-          error: { code: -32001, message: 'Authentication required' } 
-        }, { status: 401 });
+        // Enhanced error response with discovery information
+        if (this.discoveryHandler) {
+          const errorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
+            parsed.id,
+            request.url,
+            'invalid_token',
+            'Authentication required'
+          );
+          
+          return json(errorResponse, { 
+            status: 401,
+            headers: {
+              'WWW-Authenticate': this.discoveryHandler.createWWWAuthenticateHeader(request.url)
+            }
+          });
+        } else {
+          return json({ 
+            jsonrpc: '2.0', 
+            id: parsed.id, 
+            error: { code: -32001, message: 'Authentication required' } 
+          }, { status: 401 });
+        }
       }
     } catch (error) {
       // Handle auth errors with proper HTTP status codes
@@ -111,11 +188,29 @@ export class MCPServer {
         const statusCode = typeof (error as Error & { statusCode?: number }).statusCode === 'number' 
           ? (error as Error & { statusCode: number }).statusCode 
           : 401;
-        return json({ 
-          jsonrpc: '2.0', 
-          id: parsed.id, 
-          error: { code: -32001, message: error.message } 
-        }, { status: statusCode });
+        
+        // Enhanced error response with discovery information
+        if (this.discoveryHandler) {
+          const errorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
+            parsed.id,
+            request.url,
+            'invalid_token',
+            error.message
+          );
+          
+          return json(errorResponse, { 
+            status: statusCode,
+            headers: {
+              'WWW-Authenticate': this.discoveryHandler.createWWWAuthenticateHeader(request.url)
+            }
+          });
+        } else {
+          return json({ 
+            jsonrpc: '2.0', 
+            id: parsed.id, 
+            error: { code: -32001, message: error.message } 
+          }, { status: statusCode });
+        }
       }
       throw error;
     }

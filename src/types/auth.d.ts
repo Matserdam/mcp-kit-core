@@ -149,3 +149,72 @@ export interface MCPResourceUriExtractor {
 
 // Re-export auth error and codes from lib implementation
 export { MCPAuthError, MCP_AUTH_ERROR_CODES } from '../lib/auth/errors';
+
+// Server Discovery & Metadata types (RFC 8414, RFC 9728)
+export interface MCPAuthorizationServerMetadata {
+  issuer: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  introspection_endpoint?: string;
+  revocation_endpoint?: string;
+  registration_endpoint?: string;
+  response_types_supported: string[];
+  grant_types_supported: string[];
+  code_challenge_methods_supported?: string[];
+  scopes_supported?: string[];
+  token_endpoint_auth_methods_supported?: string[];
+  introspection_endpoint_auth_methods_supported?: string[];
+  revocation_endpoint_auth_methods_supported?: string[];
+}
+
+export interface MCPProtectedResourceMetadata {
+  resource_indicators_supported: boolean;
+  authorization_servers: MCPAuthorizationServerInfo[];
+  scopes_supported?: string[];
+  resource_signing_alg_values_supported?: string[];
+}
+
+export interface MCPAuthorizationServerInfo {
+  issuer: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  introspection_endpoint?: string;
+}
+
+export interface MCPDiscoveryError {
+  error: string;
+  error_description?: string;
+  error_uri?: string;
+}
+
+// Discovery configuration types
+export interface MCPAuthServerConfig {
+  issuer: string;
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  introspectionEndpoint?: string;
+  revocationEndpoint?: string;
+  registrationEndpoint?: string;
+  supportedResponseTypes: string[];
+  supportedGrantTypes: string[];
+  supportedCodeChallengeMethods?: string[];
+  supportedScopes?: string[];
+  supportedTokenAuthMethods?: string[];
+  supportedIntrospectionAuthMethods?: string[];
+  supportedRevocationAuthMethods?: string[];
+}
+
+export interface MCPProtectedResourceConfig {
+  resourceUri: string;
+  scopes: string[];
+  audience: string[];
+  authorizationServers: MCPAuthServerConfig[];
+  resourceSigningAlgorithms?: string[];
+}
+
+export interface MCPDiscoveryConfig {
+  authorizationServer: MCPAuthServerConfig;
+  protectedResource: MCPProtectedResourceConfig;
+  enableDiscoveryEndpoints?: boolean;
+  discoveryCacheTtl?: number; // Cache TTL in seconds
+}

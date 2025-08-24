@@ -1,9 +1,11 @@
 import { MCPJSONSchema, MCPToolkit } from "./toolkit";
+import type { MCPDiscoveryConfig } from "./auth";
 
 export interface MCPServerOptions {
   toolkits: Array<MCPToolkit>;
   logger?: Logger;
   config?: Partial<Config>;
+  discovery?: MCPDiscoveryConfig;
 }
 
 export interface MCPResponse {

@@ -6,3 +6,6 @@ export * from './middleware';
 
 // Export auth errors
 export * from './errors';
+
+// Export discovery handler
+export * from './discovery';
