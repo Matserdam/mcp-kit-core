@@ -9,6 +9,7 @@
 - **Context Handling**: Centralized context creation logic with proper Promise handling
 - **Code Standards**: Removed unnecessary type casts and improved async/await patterns
 - **Mutation Testing**: Added comprehensive mutation tests for `runSearch` and `runFetch` tool runners with 25 edge case scenarios
+- **Documentation**: Added comprehensive custom URI schemes documentation with naming conventions and implementation guidelines
 
 - Breaking: Tools listed/called as `namespace_tool` (underscore), not `namespace.tool`.
 - Core: `initialize` echoes requested `protocolVersion` (if provided).

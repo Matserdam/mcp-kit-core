@@ -205,6 +205,8 @@ Server owns template matching. Define templates on the toolkit; the server resol
 
 These templates are used by both `resources/read` and the canonical `search`/`fetch` tools.
 
+For custom URI schemes and naming conventions, see [Custom URI Schemes](docs/uri-schemes.md).
+
 Factories for convenience:
 
 ```ts
@@ -224,3 +226,9 @@ const files = createMCPResourceTemplateProvider({
   },
 });
 ```
+
+## Documentation
+
+- [API Reference](docs/api-reference.md) - Comprehensive API documentation
+- [Custom URI Schemes](docs/uri-schemes.md) - URI scheme conventions and examples
+- [Architecture Decision Records](docs/adr/) - System architecture documentation
