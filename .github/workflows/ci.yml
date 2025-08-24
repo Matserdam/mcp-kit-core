@@ -27,6 +27,16 @@ jobs:
     - name: Link package for examples
       run: bun link
     
+    - name: Install example dependencies
+      run: |
+        echo "📦 Installing dependencies for examples..."
+        for example in examples/*/; do
+          if [ -f "$example/package.json" ]; then
+            echo "📁 Installing dependencies in $example"
+            cd "$example" && bun install && cd ../..
+          fi
+        done
+    
     - name: Run tests
       run: bun run test
     
