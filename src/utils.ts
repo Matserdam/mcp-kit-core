@@ -3,7 +3,7 @@ import { MCPJSONSchema, MCPSchemaDef } from "./types/toolkit";
 
 export const getValidSchema = (schema?: MCPSchemaDef) : MCPJSONSchema | undefined => {
   if (schema?.zod) {
-    const jsonSchema = zodToJsonSchema<"openApi3">(schema.zod, {
+    const jsonSchema = zodToJsonSchema<"openApi3">(schema.zod as any, {
       $refStrategy: 'none', // keeps it self-contained, no $refs
     });
     return jsonSchema;

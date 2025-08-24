@@ -20,7 +20,7 @@ export const handleResourcesRead = async (
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
     const contextResult = tk?.createContext?.(contextInit) ?? {};
     const context: Record<string, unknown> = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = provider.read(context);
+    const resultPromise = provider.read(context as any);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
@@ -32,7 +32,7 @@ export const handleResourcesRead = async (
     const tk = toolkits.find((t) => (t.resourceTemplates ?? []).includes(tpl));
     const contextResult = tk?.createContext?.(contextInit) ?? {};
     const context: Record<string, unknown> = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }));
+    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }) as any);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }

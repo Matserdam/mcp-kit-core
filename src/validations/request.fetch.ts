@@ -48,10 +48,12 @@ export type  ParsedFetchRpc = MCPRequest;
 export function parseFetchRpc(input: unknown): MCPRequest {
   const parsed = zRpcRequest.safeParse(input);
   if (!parsed.success) {
-    return { id: (input as any)?.id ?? null, method: (input as any)?.method ?? 'unknown', params: {}, error: { code: -32600, message: parsed.error.message } };
+    const inputObj = input as Record<string, unknown>;
+    return { id: inputObj?.id ?? null, method: inputObj?.method as string ?? 'unknown', params: {}, error: { code: -32600, message: parsed.error.message } };
   }
   const { id: maybeId, method, params } = parsed.data;
-  const generatedId: string = typeof (globalThis as any)?.crypto?.randomUUID === 'function' ? (globalThis as any).crypto.randomUUID() : randomUUID();
+  const globalThisObj = globalThis as Record<string, unknown>;
+  const generatedId: string = typeof globalThisObj?.crypto === 'object' && globalThisObj.crypto && typeof (globalThisObj.crypto as Record<string, unknown>)?.randomUUID === 'function' ? (globalThisObj.crypto as Record<string, unknown>).randomUUID() as string : randomUUID();
   const id = maybeId === undefined ? generatedId : maybeId;
 
   if (method === 'tools/call') {
