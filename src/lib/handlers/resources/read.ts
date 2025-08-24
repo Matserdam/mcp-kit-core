@@ -1,4 +1,4 @@
-import type { MCPResponse, MCPResourceReadParams } from '../../../types/server';
+import type { MCPResponse, MCPResourceReadParams, MCPResourceReadResult } from '../../../types/server';
 import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../types/toolkit';
 import type { ResourceUri } from '../../../types/server';
 import { uriMatchesTemplate } from './util';
@@ -20,8 +20,8 @@ export const handleResourcesRead = async (
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
     const contextResult = tk?.createContext?.(contextInit) ?? {};
     const context = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = provider.read(context as unknown);
-    const result = resultPromise instanceof Promise ? await resultPromise : resultPromise;
+    const resultPromise = provider.read(context);
+    const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
 
@@ -32,8 +32,8 @@ export const handleResourcesRead = async (
     const tk = toolkits.find((t) => (t.resourceTemplates ?? []).includes(tpl));
     const contextResult = tk?.createContext?.(contextInit) ?? {};
     const context = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }) as unknown);
-    const result = resultPromise instanceof Promise ? await resultPromise : resultPromise;
+    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }));
+    const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
 
