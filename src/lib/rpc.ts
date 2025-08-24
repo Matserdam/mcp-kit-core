@@ -1,54 +1,56 @@
-import { MCPRequest, MCPResponse } from "../types/server";
-import { MCPToolkit } from "../types/toolkit";
-
-// No helper needed; arguments are already provided in the correct shape
-
+import type { MCPRequest, MCPResponse } from '../types/server';
+import type { MCPToolkit } from '../types/toolkit';
+import type { MCPDiscoveryConfig } from '../types/auth';
+import { handleInitialize } from './handlers/initialize';
+import { handleToolsList } from './handlers/tools/list';
+import { handleToolCall } from './handlers/tools/call';
+import { handlePromptsList } from './handlers/prompts/list';
+import { handlePromptsGet } from './handlers/prompts/get';
 import { handleResourcesList } from './handlers/resources/list';
 import { handleResourcesRead } from './handlers/resources/read';
 import { handleResourceTemplatesList } from './handlers/resources/templates.list';
-import { handleToolsList } from './handlers/tools/list';
-import { handleToolCall } from './handlers/tools/call';
-import { handleNotificationInitialized } from './handlers/notifications/initialized';
-import { handlePromptsList } from './handlers/prompts/list';
-import { handlePromptsGet } from './handlers/prompts/get';
-import { handleInitialize } from './handlers/initialize';
 import { handlePing } from './handlers/ping';
 
 export interface MCPRPCContext {
   httpRequest?: Request;
   env?: NodeJS.ProcessEnv;
+  discovery?: MCPDiscoveryConfig;
 }
 
-export const handleRPC = async (
-  request: MCPRequest, 
+export async function handleRPC(
+  request: MCPRequest,
   toolkits: MCPToolkit<unknown, unknown>[],
   context?: MCPRPCContext
-): Promise<MCPResponse> => {
+): Promise<MCPResponse> {
   const { id, method, params } = request;
+
   switch (method) {
-    // Alphabetical order of methods
     case 'initialize':
       return handleInitialize(id, params);
-    case 'notifications/initialized':
-      return handleNotificationInitialized(id);
-    case 'ping':
-      return handlePing(id);
+    case 'tools/list':
+      return handleToolsList(id, toolkits);
+    case 'tools/call':
+      return handleToolCall(request, toolkits, context);
+    case 'prompts/list':
+      return handlePromptsList(id, toolkits);
     case 'prompts/get':
       return handlePromptsGet(request, toolkits, context);
-    case 'prompts/list':
-      return handlePromptsList(id, toolkits, context);
     case 'resources/list':
-      return handleResourcesList(id, toolkits, context);
+      return handleResourcesList(id, toolkits);
     case 'resources/read':
       return handleResourcesRead(id, params, toolkits, { requestId: id }, context);
     case 'resources/templates/list':
-      return handleResourceTemplatesList(id, toolkits, context);
-    case 'tools/call':
-      return handleToolCall(request, toolkits, context);
-    case 'tools/list':
-      return handleToolsList(id, toolkits, context);
-
+      return handleResourceTemplatesList(id, toolkits);
+    case 'ping':
+      return handlePing(id);
     default:
-      return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } };
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32601,
+          message: 'Method not found'
+        }
+      };
   }
 }

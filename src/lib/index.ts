@@ -1,131 +1,91 @@
 import type { MCPServerOptions } from '../types/server';
 import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
+import type { MCPToolkit } from '../types/toolkit';
+import type { MCPDiscoveryConfig } from '../types/auth';
 import { StdioController } from './stdio';
 import { parseFetchRpc } from '../validations/request.fetch';
 import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
 import { responseSSEOnce } from './response/sse';
-import { MCPDiscoveryHandler, createDiscoveryResponse, createDiscoveryError } from './auth/discovery';
+import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery';
+import { defaultCORSHandler } from './handlers/cors';
 
 export class MCPServer {
+  private readonly toolkits: MCPToolkit<unknown, unknown>[];
+  private readonly discoveryHandler?: MCPDiscoveryHandler;
   private readonly options: MCPServerOptions;
-  private discoveryHandler?: MCPDiscoveryHandler;
 
-  public constructor(options: MCPServerOptions) {
+  constructor(options: MCPServerOptions) {
+    this.toolkits = options.toolkits as MCPToolkit<unknown, unknown>[];
     this.options = options;
     
-    // Initialize discovery handler if configuration is provided
     if (options.discovery) {
-      this.discoveryHandler = new MCPDiscoveryHandler(options.discovery);
-      
       // Validate discovery configuration
-      const validation = this.discoveryHandler.validateConfiguration();
-      if (!validation.valid) {
-        throw new Error(`Invalid discovery configuration: ${validation.errors.join(', ')}`);
+      this.validateDiscoveryConfig(options.discovery);
+      this.discoveryHandler = new MCPDiscoveryHandler(options.discovery);
+    }
+  }
+
+  /**
+   * Validate discovery configuration
+   */
+  private validateDiscoveryConfig(config: MCPDiscoveryConfig): void {
+    // Validate authorization server configuration
+    if (!config.authorizationServer.issuer || config.authorizationServer.issuer.trim() === '') {
+      throw new Error('Invalid discovery configuration: Authorization server issuer is required');
+    }
+    
+    if (!config.authorizationServer.authorizationEndpoint) {
+      throw new Error('Invalid discovery configuration: Authorization server authorization endpoint is required');
+    }
+    
+    if (!config.authorizationServer.tokenEndpoint) {
+      throw new Error('Invalid discovery configuration: Authorization server token endpoint is required');
+    }
+
+    // Validate protected resource configuration
+    if (!config.protectedResource.resourceUri) {
+      throw new Error('Invalid discovery configuration: Protected resource URI is required');
+    }
+    
+    if (!config.protectedResource.authorizationServers || config.protectedResource.authorizationServers.length === 0) {
+      throw new Error('Invalid discovery configuration: At least one authorization server is required');
+    }
+    
+    for (const server of config.protectedResource.authorizationServers) {
+      if (!server.issuer || server.issuer.trim() === '') {
+        throw new Error('Invalid discovery configuration: Authorization server issuer is required');
       }
     }
   }
 
-  // public readonly handleRPC = async (parsed: MCPRequest): Promise<MCPResponse> => {
-  //   const { id, method, params } = parsed;
-  //   switch (method) {
-  //     case 'initialize': {
-  //       const result: InitializeResult = {
-  //         protocolVersion: '2025-06-18',
-  //         serverInfo: { name: 'mcp-kit', version: '0.0.1' },
-  //         capabilities: { tools: { listChanged: true } },
-  //       };
-  //       return { jsonrpc: '2.0', id: id!, result };
-  //     }
-  //     case 'tools/list': {
-  //       const tools = this.options.toolkits.flatMap((tk: MCPToolkit) =>
-  //         (tk.tools ?? []).map((tool: MCPTool) => {
-  //           const fullName = `${tk.namespace}.${tool.name}`;
-  //           const inputSchema = getValidSchema(tool.input);
-  //           const outputSchema = getValidSchema(tool.output);
-  //           return { name: fullName, description: tool.description ?? '', inputSchema, outputSchema };
-  //         }),
-  //       );
-  //       const result: MCPToolsListResult = { tools };
-  //       return { jsonrpc: '2.0', id: id!, result };
-  //     }
-  //     case 'tools/call': {
-  //       const name = typeof (params as any)?.name === 'string' ? (params as any).name : undefined;
-  //       const input = (params as any)?.params ?? (params as any)?.input ?? undefined;
-  //       if (!name || !name.includes('.')) {
-  //         return { jsonrpc: '2.0', id: id!, error: { code: -32602, message: 'Invalid params: expected params.name as "namespace.tool"' } };
-  //       }
-  //       const [namespace, toolName] = name.split('.', 2);
-  //       const toolkit = this.options.toolkits.find((tk: MCPToolkit) => tk.namespace === namespace);
-  //       if (!toolkit) return { jsonrpc: '2.0', id: id!, error: { code: -32601, message: `Toolkit not found: ${namespace}` } };
-  //       const tool = (toolkit.tools ?? []).find((t: MCPTool) => t.name === toolName);
-  //       if (!tool) return { jsonrpc: '2.0', id: id!, error: { code: -32601, message: `Tool not found: ${name}` } };
-  //       try {
-  //         const init = { requestId: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
-  //         const context = typeof toolkit.createContext === 'function' ? await toolkit.createContext(init) : undefined;
-  //         const toolResult = await (tool as any).run(input, context);
-  //         const result: MCPToolCallResult = (!toolResult || typeof toolResult !== 'object' || !Array.isArray((toolResult as any).content))
-  //           ? { content: [{ type: 'text', text: JSON.stringify(toolResult) }] }
-  //           : toolResult as MCPToolCallResult;
-  //         return { jsonrpc: '2.0', id: id!, result };
-  //       } catch (err: any) {
-  //         return { jsonrpc: '2.0', id: id!, error: { code: -32000, message: 'Tool execution error', data: { message: String(err?.message ?? err) } } };
-  //       }
-  //     }
-  //     default: {
-  //       return { jsonrpc: '2.0', id: id!, error: { code: -32601, message: 'Method not found' } };
-  //     }
-  //   }
-  // };
-
-  public readonly fetch = async (request: Request): Promise<Response> => {
+  async fetch(request: Request): Promise<Response> {
     const method = request.method.toUpperCase();
     const url = new URL(request.url);
 
-    const json = (data: unknown, init?: ResponseInit) => responseJson(data, init);
+    // Handle CORS preflight requests first
+    const corsResponse = defaultCORSHandler.handlePreflight(request);
+    if (corsResponse) {
+      return corsResponse;
+    }
 
     // Handle discovery endpoints
     if (this.discoveryHandler && this.options.discovery?.enableDiscoveryEndpoints !== false) {
-      // Handle CORS preflight for discovery endpoints
-      if (method === 'OPTIONS' && url.pathname.startsWith('/.well-known/')) {
-        return new Response(null, {
-          status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
-          }
-        });
-      }
-
-      // Handle authorization server discovery endpoint (RFC 8414)
-      if (method === 'GET' && url.pathname === '/.well-known/oauth-authorization-server') {
-        try {
+      if (url.pathname === '/.well-known/oauth-authorization-server') {
+        if (method === 'GET') {
           const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
-          return createDiscoveryResponse(metadata);
-        } catch (error) {
-          return createDiscoveryError({
-            error: 'server_error',
-            error_description: 'Failed to generate authorization server metadata'
-          });
+          const response = createDiscoveryResponse(metadata);
+          return defaultCORSHandler.addCORSHeaders(response, request);
         }
+        return new Response('Method Not Allowed', { status: 405 });
       }
-
-      // Handle protected resource discovery endpoint (RFC 9728)
-      if (method === 'GET' && url.pathname === '/.well-known/oauth-protected-resource') {
-        try {
+      
+      if (url.pathname === '/.well-known/oauth-protected-resource') {
+        if (method === 'GET') {
           const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
-          return createDiscoveryResponse(metadata);
-        } catch (error) {
-          return createDiscoveryError({
-            error: 'server_error',
-            error_description: 'Failed to generate protected resource metadata'
-          });
+          const response = createDiscoveryResponse(metadata);
+          return defaultCORSHandler.addCORSHeaders(response, request);
         }
-      }
-
-      // Return 405 for non-GET requests to discovery endpoints
-      if (url.pathname.startsWith('/.well-known/')) {
         return new Response('Method Not Allowed', { status: 405 });
       }
     }
@@ -136,7 +96,8 @@ export class MCPServer {
     try {
       rpc = await request.json();
     } catch {
-      return json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
+      const errorResponse = responseJson({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
+      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
     }
     
     // Accept negotiation
@@ -147,29 +108,58 @@ export class MCPServer {
     // If client sent a JSON-RPC response payload (not a request), ack with 202
     const isClientResponse = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && !('method' in rpc) && (('result' in rpc) || ('error' in rpc));
     if (isClientResponse) {
-      return new Response(null, { status: 202 });
+      const response = new Response(null, { status: 202 });
+      return defaultCORSHandler.addCORSHeaders(response, request);
     }
+    
     const parsed = parseFetchRpc(rpc);
     if ("error" in parsed) {
-      return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
+      const errorResponse = responseJson({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
+      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
     }
     
     // Notification (no id provided by client payload)
     const isNotification = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && typeof (rpc as Record<string, unknown>).method === 'string' && !('id' in rpc);
     if (isNotification) {
-      void handleRPC(parsed, this.options.toolkits);
-      return new Response(null, { status: 202 });
+      void handleRPC(parsed, this.toolkits);
+      const response = new Response(null, { status: 202 });
+      return defaultCORSHandler.addCORSHeaders(response, request);
     }
 
-    const response = await handleRPC(parsed, this.options.toolkits, { httpRequest: request });
+    const response = await handleRPC(parsed, this.toolkits, {
+      httpRequest: request,
+      discovery: this.options.discovery
+    });
+    
+    let finalResponse: Response;
     if (wantsEventStream && !wantsJson) {
-      return responseSSEOnce(response);
-    }
-    if (wantsEventStream && wantsJson) {
+      finalResponse = responseSSEOnce(response);
+    } else if (wantsEventStream && wantsJson) {
       // Prefer SSE when explicitly requested alongside JSON
-      return responseSSEOnce(response);
+      finalResponse = responseSSEOnce(response);
+    } else {
+      finalResponse = responseJson(response);
     }
-    return json(response);
+    
+    // Handle auth errors with proper HTTP status and headers
+    if (this.discoveryHandler && 'error' in response && response.error?.code === -32001) {
+      const wwwAuthHeader = this.discoveryHandler.createWWWAuthenticateHeader(request.url);
+      const enhancedErrorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
+        response.id,
+        request.url,
+        'invalid_token',
+        response.error.message
+      );
+      const errorResponse = responseJson(enhancedErrorResponse, { 
+        status: 401,
+        headers: {
+          'WWW-Authenticate': wwwAuthHeader
+        }
+      });
+      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
+    }
+    
+    return defaultCORSHandler.addCORSHeaders(finalResponse, request);
   }
 
   public stdio(): void {
@@ -189,7 +179,7 @@ export class MCPServer {
   }
 
   public startStdio = (options?: MCPStdioOptions): MCPStdioController => {
-    const controller = new StdioController(this.options.toolkits, options);
+    const controller = new StdioController(this.toolkits, options);
     controller.start();
     return controller;
   }

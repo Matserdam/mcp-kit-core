@@ -9,12 +9,12 @@ export type MCPJSONSchema = {
   description?: string;
   type?: string | string[];
   properties?: {
-    [key: string]: JSONSchema;
+    [key: string]: MCPJSONSchema;
   };
   required?: string[];
   enum?: any[];
-  items?: JSONSchema | JSONSchema[];
-  additionalProperties?: boolean | JSONSchema;
+  items?: MCPJSONSchema | MCPJSONSchema[];
+  additionalProperties?: boolean | MCPJSONSchema;
   pattern?: string;
   format?: string;
   default?: any;
@@ -23,10 +23,10 @@ export type MCPJSONSchema = {
   minLength?: number;
   maxLength?: number;
   // ... include other keywords as needed per JSON Schema Draft (e.g. "allOf", "anyOf", "not", etc.)
-  allOf?: JSONSchema[];
-  anyOf?: JSONSchema[];
-  oneOf?: JSONSchema[];
-  not?: JSONSchema;
+  allOf?: MCPJSONSchema[];
+  anyOf?: MCPJSONSchema[];
+  oneOf?: MCPJSONSchema[];
+  not?: MCPJSONSchema;
 };
 export type MCPSchemaDef = { zod?: ZodTypeAny, jsonSchema?: MCPJSONSchema };
 

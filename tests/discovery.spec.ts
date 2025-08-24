@@ -422,6 +422,11 @@ describe('MCPServer Discovery Integration', () => {
       const authServer = new MCPServer({
         toolkits: [{
           namespace: 'test',
+          tools: [{
+            name: 'protected-tool',
+            description: 'A tool that requires auth',
+            run: () => ({ content: [{ type: 'text', text: 'protected tool result' }] })
+          }],
           auth: {
             type: 'http',
             validateToken: () => Promise.resolve(null) // Always fail auth
@@ -458,7 +463,11 @@ describe('MCPServer Discovery Integration', () => {
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 'test-123',
-          method: 'tools/list'
+          method: 'tools/call',
+          params: {
+            name: 'test_protected-tool',
+            arguments: {}
+          }
         })
       });
 

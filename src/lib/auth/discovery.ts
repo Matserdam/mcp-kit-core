@@ -31,6 +31,39 @@ export class MCPDiscoveryHandler {
   }
 
   /**
+   * Validate discovery configuration
+   */
+  private validateConfig(config: MCPDiscoveryConfig): void {
+    // Validate authorization server configuration
+    if (!config.authorizationServer.issuer || config.authorizationServer.issuer.trim() === '') {
+      throw new Error('Invalid discovery configuration: Authorization server issuer is required');
+    }
+    
+    if (!config.authorizationServer.authorizationEndpoint) {
+      throw new Error('Invalid discovery configuration: Authorization server authorization endpoint is required');
+    }
+    
+    if (!config.authorizationServer.tokenEndpoint) {
+      throw new Error('Invalid discovery configuration: Authorization server token endpoint is required');
+    }
+
+    // Validate protected resource configuration
+    if (!config.protectedResource.resourceUri) {
+      throw new Error('Invalid discovery configuration: Protected resource URI is required');
+    }
+    
+    if (!config.protectedResource.authorizationServers || config.protectedResource.authorizationServers.length === 0) {
+      throw new Error('Invalid discovery configuration: At least one authorization server is required');
+    }
+    
+    for (const server of config.protectedResource.authorizationServers) {
+      if (!server.issuer || server.issuer.trim() === '') {
+        throw new Error('Invalid discovery configuration: Authorization server issuer is required');
+      }
+    }
+  }
+
+  /**
    * Get authorization server metadata per RFC 8414.
    * 
    * @returns Promise resolving to RFC 8414 compliant authorization server metadata

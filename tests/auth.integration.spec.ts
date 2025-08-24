@@ -98,7 +98,7 @@ describe('Authentication Integration Tests', () => {
   });
 
   describe('Tools List Authentication', () => {
-    it('should include public toolkit tools when no auth provided', async () => {
+    it('should include all toolkit tools when no auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'tools/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { httpRequest: createMockRequest() });
       
@@ -106,16 +106,15 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should include public toolkit tools
+      // Should include ALL toolkit tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
+      expect(toolNames).toContain('private_private-tool');
       // Should include canonical tools
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('fetch');
-      // Should NOT include private toolkit tools
-      expect(toolNames).not.toContain('private_private-tool');
     });
 
-    it('should include private toolkit tools when valid auth provided', async () => {
+    it('should include all toolkit tools when valid auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'tools/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { 
         httpRequest: createMockRequest({ authorization: 'Bearer valid-token' }) 
@@ -125,7 +124,7 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should include both public and private toolkit tools
+      // Should include ALL toolkit tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
       expect(toolNames).toContain('private_private-tool');
       // Should include canonical tools
@@ -133,7 +132,7 @@ describe('Authentication Integration Tests', () => {
       expect(toolNames).toContain('fetch');
     });
 
-    it('should exclude private toolkit tools when invalid auth provided', async () => {
+    it('should include all toolkit tools when invalid auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'tools/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { 
         httpRequest: createMockRequest({ authorization: 'Bearer invalid-token' }) 
@@ -143,10 +142,12 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should include public toolkit tools
+      // Should include ALL toolkit tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
-      // Should NOT include private toolkit tools
-      expect(toolNames).not.toContain('private_private-tool');
+      expect(toolNames).toContain('private_private-tool');
+      // Should include canonical tools
+      expect(toolNames).toContain('search');
+      expect(toolNames).toContain('fetch');
     });
   });
 
@@ -198,7 +199,7 @@ describe('Authentication Integration Tests', () => {
   });
 
   describe('Resources List Authentication', () => {
-    it('should include public toolkit resources when no auth provided', async () => {
+    it('should include all toolkit resources when no auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'resources/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { httpRequest: createMockRequest() });
       
@@ -206,13 +207,12 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { resources: Array<{ uri: string }> } }).result;
       const resourceUris = result.resources.map(r => r.uri);
       
-      // Should include public toolkit resources
+      // Should include ALL toolkit resources (no filtering on lists)
       expect(resourceUris).toContain('public://resource');
-      // Should NOT include private toolkit resources
-      expect(resourceUris).not.toContain('private://resource');
+      expect(resourceUris).toContain('private://resource');
     });
 
-    it('should include private toolkit resources when valid auth provided', async () => {
+    it('should include all toolkit resources when valid auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'resources/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { 
         httpRequest: createMockRequest({ authorization: 'Bearer valid-token' }) 
@@ -222,7 +222,7 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { resources: Array<{ uri: string }> } }).result;
       const resourceUris = result.resources.map(r => r.uri);
       
-      // Should include both public and private toolkit resources
+      // Should include ALL toolkit resources (no filtering on lists)
       expect(resourceUris).toContain('public://resource');
       expect(resourceUris).toContain('private://resource');
     });
@@ -276,7 +276,7 @@ describe('Authentication Integration Tests', () => {
   });
 
   describe('Resource Templates List Authentication', () => {
-    it('should include public toolkit templates when no auth provided', async () => {
+    it('should include all toolkit templates when no auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'resources/templates/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { httpRequest: createMockRequest() });
       
@@ -284,13 +284,12 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { resourceTemplates: Array<{ name: string }> } }).result;
       const templateNames = result.resourceTemplates.map(t => t.name);
       
-      // Should include public toolkit templates
+      // Should include ALL toolkit templates (no filtering on lists)
       expect(templateNames).toContain('public-template');
-      // Should NOT include private toolkit templates
-      expect(templateNames).not.toContain('private-template');
+      expect(templateNames).toContain('private-template');
     });
 
-    it('should include private toolkit templates when valid auth provided', async () => {
+    it('should include all toolkit templates when valid auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'resources/templates/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { 
         httpRequest: createMockRequest({ authorization: 'Bearer valid-token' }) 
@@ -300,14 +299,14 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { resourceTemplates: Array<{ name: string }> } }).result;
       const templateNames = result.resourceTemplates.map(t => t.name);
       
-      // Should include both public and private toolkit templates
+      // Should include ALL toolkit templates (no filtering on lists)
       expect(templateNames).toContain('public-template');
       expect(templateNames).toContain('private-template');
     });
   });
 
   describe('Prompts List Authentication', () => {
-    it('should include public toolkit prompts when no auth provided', async () => {
+    it('should include all toolkit prompts when no auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'prompts/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { httpRequest: createMockRequest() });
       
@@ -315,13 +314,12 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { prompts: Array<{ name: string }> } }).result;
       const promptNames = result.prompts.map(p => p.name);
       
-      // Should include public toolkit prompts
+      // Should include ALL toolkit prompts (no filtering on lists)
       expect(promptNames).toContain('public_public-prompt');
-      // Should NOT include private toolkit prompts
-      expect(promptNames).not.toContain('private_private-prompt');
+      expect(promptNames).toContain('private_private-prompt');
     });
 
-    it('should include private toolkit prompts when valid auth provided', async () => {
+    it('should include all toolkit prompts when valid auth provided', async () => {
       const request: MCPRequest = { id: 1, method: 'prompts/list' } as MCPRequest;
       const response = await handleRPC(request, toolkits, { 
         httpRequest: createMockRequest({ authorization: 'Bearer valid-token' }) 
@@ -331,7 +329,7 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { prompts: Array<{ name: string }> } }).result;
       const promptNames = result.prompts.map(p => p.name);
       
-      // Should include both public and private toolkit prompts
+      // Should include ALL toolkit prompts (no filtering on lists)
       expect(promptNames).toContain('public_public-prompt');
       expect(promptNames).toContain('private_private-prompt');
     });
@@ -470,9 +468,9 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should only include public tools
+      // Should include ALL tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
-      expect(toolNames).not.toContain('private_private-tool');
+      expect(toolNames).toContain('private_private-tool');
     });
 
     it('should handle missing authorization header gracefully', async () => {
@@ -485,9 +483,9 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should only include public tools
+      // Should include ALL tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
-      expect(toolNames).not.toContain('private_private-tool');
+      expect(toolNames).toContain('private_private-tool');
     });
 
     it('should handle toolkit without auth middleware', async () => {
@@ -508,11 +506,10 @@ describe('Authentication Integration Tests', () => {
       const result = (response as MCPResponse & { result: { tools: Array<{ name: string }> } }).result;
       const toolNames = result.tools.map(t => t.name);
       
-      // Should include both public and no-auth toolkit tools
+      // Should include ALL toolkit tools (no filtering on lists)
       expect(toolNames).toContain('public_public-tool');
+      expect(toolNames).toContain('private_private-tool');
       expect(toolNames).toContain('noauth_noauth-tool');
-      // Should NOT include private toolkit tools
-      expect(toolNames).not.toContain('private_private-tool');
     });
   });
 });
