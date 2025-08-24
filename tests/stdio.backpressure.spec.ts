@@ -28,7 +28,7 @@ describe('StdioController backpressure', () => {
     expect(controller.isRunning).toBe(false);
   });
 
-  it('queues writes and processes them sequentially', async () => {
+  it('queues writes and processes them sequentially', () => {
     const controller = new StdioController([], {});
     const result1 = controller.notify('test', { data: 'small' });
     const result2 = controller.notify('test', { data: 'large'.repeat(1000) });
@@ -44,7 +44,7 @@ describe('StdioController backpressure', () => {
 
     const out: Uint8Array[] = [];
     const controller = new StdioController([], { input: makeReadable([a, b]) as unknown as ReadableStream<Uint8Array>, output: makeWritable(out) as unknown as WritableStream<Uint8Array> });
-    await controller.start();
+    controller.start();
     // allow loop to process
     await new Promise((r) => setTimeout(r, 10));
     await controller.stop();

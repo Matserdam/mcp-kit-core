@@ -41,7 +41,7 @@ describe('Canonical tools: search and fetch', () => {
       },
     ];
     const req = { id: 1, method: 'tools/call', params: { name: 'search', arguments: { query: 'pikachu', site: 'githubusercontent', topK: 1 } } } as MCPRequest;
-    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers as MCPResourceProvider<unknown>[], resourceTemplates: templates as MCPResourceTemplateProvider<unknown>[] })]);
+    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers, resourceTemplates: templates })]);
     const response = res as { result: { content: Array<{ type: string; uri?: string }> } };
     const content = response.result.content;
     expect(content[0]).toMatchObject({ type: 'text' });
@@ -56,8 +56,9 @@ describe('Canonical tools: search and fetch', () => {
       { uri: target, name: 'pikachu-text', read: () => ({ contents: [{ uri: target, name: 'pikachu-text', mimeType: 'text/plain', text: 'PIKACHU' }] }) },
     ];
     const req = { id: 2, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'pikachu', uri: target } } } as MCPRequest;
-    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers as any })]);
-    const content = (res as any).result.content as any[];
+    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers })]);
+    const response = res as { result: { content: Array<{ type: string; resource: { text: string } }> } };
+    const content = response.result.content;
     expect(content[0].type).toBe('resource');
     expect(content[0].resource.text).toBe('PIKACHU');
   });
@@ -73,12 +74,13 @@ describe('Canonical tools: search and fetch', () => {
           description: 'Front image template',
           mimeType: 'image/png'
         },
-        read: (uri: string) => ({ contents: [{ uri, name: 'front', mimeType: 'image/png', blob: 'BASE64' }] }),
+        read: (uri: string) => ({ contents: [{ uri: uri as `${string}://${string}`, name: 'front', mimeType: 'image/png', blob: 'BASE64' }] }),
       },
     ];
     const req = { id: 3, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'pikachu', uri: target } } } as MCPRequest;
-    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resourceTemplates: templates as any })]);
-    const content = (res as any).result.content as any[];
+    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resourceTemplates: templates })]);
+    const response = res as { result: { content: Array<{ type: string; resource: { blob: string } }> } };
+    const content = response.result.content;
     expect(content[0].type).toBe('resource');
     expect(content[0].resource.blob).toBe('BASE64');
   });
@@ -87,7 +89,8 @@ describe('Canonical tools: search and fetch', () => {
     const target = 'https://nowhere.invalid/file.bin';
     const req = { id: 4, method: 'tools/call', params: { name: 'fetch', arguments: { id: target } } } as MCPRequest;
     const res = await handleRPC(req, []);
-    const content = (res as any).result.content as any[];
+    const response = res as { result: { content: unknown[] } };
+    const content = response.result.content;
     expect(Array.isArray(content)).toBe(true);
     expect(content.length).toBe(0);
   });

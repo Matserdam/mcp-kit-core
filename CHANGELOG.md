@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Code Quality & Type Safety
+- **Type Safety**: Enforced `createContext` must return `Record<string, unknown>` in type definitions
+- **Lint Cleanup**: Fixed all 293 lint errors throughout core library, tests, and examples
+- **Type System**: Eliminated problematic `as any` type assertions in favor of proper typing
+- **Context Handling**: Centralized context creation logic with proper Promise handling
+- **Code Standards**: Removed unnecessary type casts and improved async/await patterns
+
 - Breaking: Tools listed/called as `namespace_tool` (underscore), not `namespace.tool`.
 - Core: `initialize` echoes requested `protocolVersion` (if provided).
 - Core: Prompts minimal support: `prompts/list`, `prompts/get`.

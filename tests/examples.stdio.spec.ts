@@ -1,23 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { createServer } from '../examples/mcp-simple-bun-stdio/index';
 
-const jsonrpc = async (fetcher: (body: any) => Promise<Response>, body: any) => {
+const jsonrpc = async (fetcher: (body: Record<string, unknown>) => Promise<Response>, body: Record<string, unknown>) => {
   const res = await fetcher(body);
   const txt = await res.text();
-  return JSON.parse(txt);
+  return JSON.parse(txt) as Record<string, unknown>;
 };
 
 describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
   it('echo and sum tools respond', async () => {
     const server = createServer();
-    const fetcher = (body: any) => server.fetch(new Request('http://local/mcp', { method: 'POST', body: JSON.stringify(body) }));
+    const fetcher = (body: Record<string, unknown>) => server.fetch(new Request('http://local/mcp', { method: 'POST', body: JSON.stringify(body) }));
 
     const init = await jsonrpc(fetcher, { jsonrpc: '2.0', id: 1, method: 'initialize' });
-    expect(init.jsonrpc).toBe('2.0');
+    const initResponse = init as { jsonrpc: string };
+    expect(initResponse.jsonrpc).toBe('2.0');
 
     const list = await jsonrpc(fetcher, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
-    expect(JSON.stringify(list)).toContain('demo_echo');
-    expect(JSON.stringify(list)).toContain('demo_sum');
+    const listResponse = list;
+    expect(JSON.stringify(listResponse)).toContain('demo_echo');
+    expect(JSON.stringify(listResponse)).toContain('demo_sum');
 
     const echo = await jsonrpc(fetcher, {
       jsonrpc: '2.0',
@@ -25,7 +27,8 @@ describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
       method: 'tools/call',
       params: { name: 'demo_echo', arguments: { text: 'hi' } },
     });
-    expect(JSON.stringify(echo)).toContain('hi');
+    const echoResponse = echo;
+    expect(JSON.stringify(echoResponse)).toContain('hi');
 
     const sum = await jsonrpc(fetcher, {
       jsonrpc: '2.0',
@@ -33,7 +36,8 @@ describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
       method: 'tools/call',
       params: { name: 'demo_sum', arguments: { a: 2, b: 3 } },
     });
-    expect(JSON.stringify(sum)).toContain('5');
+    const sumResponse = sum;
+    expect(JSON.stringify(sumResponse)).toContain('5');
   });
 });
 

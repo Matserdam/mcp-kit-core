@@ -166,7 +166,7 @@ const main = async () => {
   mkdirSync(outDir, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const outPath = process.env.OUT || path.join(outDir, `stdio-summary-${ts}.json`);
-  await Bun.write(outPath, JSON.stringify(report, null, 2));
+  await (Bun as { write: (path: string, data: string) => Promise<void> }).write(outPath, JSON.stringify(report, null, 2));
 
   // Also print a short summary
   // console.log(`[stdio-perf] total=${TOTAL} concurrency=${CONCURRENCY} durationMs=${durationMs.toFixed(2)} throughputRps=${throughput.toFixed(2)}`);

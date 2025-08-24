@@ -115,7 +115,7 @@ export interface MCPToolkit<TContext = unknown> {
   middleware?: MCPToolkitMiddleware<TContext>;
   tools?: Array<MCPTool<TContext, unknown>>;
   prompts?: Array<MCPPromptDef>;
-  createContext?(init: MCPToolkitInit): Promise<TContext> | TContext;
+  createContext?(init: MCPToolkitInit): Promise<Record<string, unknown>> | Record<string, unknown>;
   resources?: Array<MCPResourceProvider<TContext>>;
   resourceTemplates?: Array<MCPResourceTemplateProvider<TContext>>;
 }

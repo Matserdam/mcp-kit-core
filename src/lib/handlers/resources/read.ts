@@ -3,6 +3,11 @@ import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } fro
 import type { ResourceUri } from '../../../types/server';
 import { uriMatchesTemplate } from './util';
 
+const createContext = async (toolkit: MCPToolkit<unknown>, contextInit: { requestId?: string | number | null }): Promise<Record<string, unknown>> => {
+  const contextResult = toolkit.createContext?.(contextInit) ?? {};
+  return contextResult instanceof Promise ? await contextResult : contextResult;
+};
+
 export const handleResourcesRead = async (
   id: string | number | null,
   params: MCPResourceReadParams,
@@ -15,12 +20,11 @@ export const handleResourcesRead = async (
   }
 
   const providers: Array<MCPResourceProvider<unknown>> = toolkits.flatMap((tk) => tk.resources ?? []);
-  const provider: MCPResourceProvider<unknown> | undefined = providers.find((p) => p.uri === (uri as ResourceUri));
+  const provider: MCPResourceProvider<unknown> | undefined = providers.find((p) => p.uri === uri);
   if (provider) {
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
-    const contextResult = tk?.createContext?.(contextInit) ?? {};
-    const context: Record<string, unknown> = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = provider.read(context as any);
+    const context = await createContext(tk!, contextInit);
+    const resultPromise = provider.read(context);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
@@ -30,9 +34,9 @@ export const handleResourcesRead = async (
     const { ok, params: pathParams } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
     if (!ok) continue;
     const tk = toolkits.find((t) => (t.resourceTemplates ?? []).includes(tpl));
-    const contextResult = tk?.createContext?.(contextInit) ?? {};
-    const context: Record<string, unknown> = contextResult instanceof Promise ? await contextResult : contextResult;
-    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }) as any);
+    const context = await createContext(tk!, contextInit);
+    const mergedContext = Object.assign({}, context, { params: pathParams });
+    const resultPromise = tpl.read(uri as ResourceUri, mergedContext);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }

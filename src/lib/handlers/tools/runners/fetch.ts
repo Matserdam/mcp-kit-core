@@ -42,7 +42,7 @@ const readViaProviders = async (
   if (provider) {
     // Best-effort read without context for canonical runner
     try {
-      const result = await provider.read({} as any);
+      const result = await provider.read({} as Record<string, unknown>);
       const contents = result.contents ?? [];
       const linkFallback: MCPToolCallResult = { content: [{ type: 'resource_link', name: provider.name, uri }] };
       if (!Array.isArray(contents) || contents.length === 0) return { jsonrpc: '2.0', id, result: linkFallback };
@@ -63,7 +63,7 @@ const readViaProviders = async (
     const { ok } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
     if (!ok) continue;
     try {
-      const result = await tpl.read(uri as ResourceUri, {} as any);
+      const result = await tpl.read(uri as ResourceUri, {} as Record<string, unknown>);
       const contents = result.contents ?? [];
       if (!Array.isArray(contents) || contents.length === 0) continue;
       const first = contents[0];

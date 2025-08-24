@@ -93,44 +93,50 @@ describe('Schema conformance (MCP 2025-06-18)', () => {
     const req: MCPRequest = { id: 1, method: 'initialize', params: {} } as MCPRequest;
     const res = await handleRPC(req, []);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect(zInitializeResult.parse((res as any).result)).toBeTruthy();
+    const response = res as { result: unknown };
+    expect(zInitializeResult.parse(response.result)).toBeTruthy();
   });
 
   it('ping returns EmptyResult {}', async () => {
     const req: MCPRequest = { id: 2, method: 'ping' } as MCPRequest;
     const res = await handleRPC(req, []);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect((res as any).result).toEqual({});
+    const response = res as { result: Record<string, never> };
+    expect(response.result).toEqual({});
   });
 
   it('tools/list matches schema', async () => {
     const req: MCPRequest = { id: 3, method: 'tools/list' } as MCPRequest;
     const res = await handleRPC(req, [ { namespace: 'demo', tools: [] } as MCPToolkit ]);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect(zToolsListResult.parse((res as any).result)).toBeTruthy();
+    const response = res as { result: unknown };
+    expect(zToolsListResult.parse(response.result)).toBeTruthy();
   });
 
   it('tools/call returns ContentBlock[]', async () => {
-    const tool: MCPTool = { name: 'echo', run: (args: any) => ({ content: [{ type: 'text', text: String(args?.text ?? '') }] }) } as any;
+    const tool: MCPTool = { name: 'echo', run: (args: Record<string, unknown>) => ({ content: [{ type: 'text', text: String((args as { text?: string })?.text ?? '') }] }) } as MCPTool;
     const req: MCPRequest = { id: 4, method: 'tools/call', params: { name: 'demo_echo', arguments: { text: 'hi' } } } as MCPRequest;
     const res = await handleRPC(req, [ { namespace: 'demo', tools: [tool] } as MCPToolkit ]);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect(zCallToolResult.parse((res as any).result)).toBeTruthy();
+    const response = res as { result: unknown };
+    expect(zCallToolResult.parse(response.result)).toBeTruthy();
   });
 
   it('resources/list matches schema', async () => {
     const req: MCPRequest = { id: 5, method: 'resources/list' } as MCPRequest;
-    const res = await handleRPC(req, [ { namespace: 'demo', resources: [ { uri: 'file:///tmp/a.txt', name: 'a', read: () => ({ contents: [{ uri: 'file:///tmp/a.txt', text: 'x' }] }) } ] } as any ]);
+    const res = await handleRPC(req, [ { namespace: 'demo', resources: [ { uri: 'file:///tmp/a.txt', name: 'a', read: () => ({ contents: [{ uri: 'file:///tmp/a.txt', text: 'x' }] }) } ] } as MCPToolkit ]);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect(zResourcesListResult.parse((res as any).result)).toBeTruthy();
+    const response = res as { result: unknown };
+    expect(zResourcesListResult.parse(response.result)).toBeTruthy();
   });
 
   it('resources/read matches schema', async () => {
-    const tk: MCPToolkit = { namespace: 'demo', resources: [ { uri: 'file:///tmp/a.txt', name: 'a', read: () => ({ contents: [{ uri: 'file:///tmp/a.txt', text: 'hello' }] }) } ] } as any;
-    const req: MCPRequest = { id: 6, method: 'resources/read', params: { uri: 'file:///tmp/a.txt' } } as any;
+    const tk: MCPToolkit = { namespace: 'demo', resources: [ { uri: 'file:///tmp/a.txt', name: 'a', read: () => ({ contents: [{ uri: 'file:///tmp/a.txt', text: 'hello' }] }) } ] } as MCPToolkit;
+    const req: MCPRequest = { id: 6, method: 'resources/read', params: { uri: 'file:///tmp/a.txt' } } as MCPRequest;
     const res = await handleRPC(req, [ tk ]);
     expect(zJSONRPCResponse.parse(res)).toBeTruthy();
-    expect(zResourcesReadResult.parse((res as any).result)).toBeTruthy();
+    const response = res as { result: unknown };
+    expect(zResourcesReadResult.parse(response.result)).toBeTruthy();
   });
 });
 

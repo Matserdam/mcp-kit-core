@@ -14,8 +14,9 @@ describe('Streamable HTTP Accept handling', () => {
     const res = await server.fetch(req);
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type') || '').toMatch(/application\/json/);
-    const json = await res.json();
-    expect(json.jsonrpc).toBe('2.0');
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { jsonrpc: string };
+    expect(response.jsonrpc).toBe('2.0');
   });
 
   it('returns SSE when Accept includes text/event-stream', async () => {
@@ -45,8 +46,9 @@ describe('Streamable HTTP Accept handling', () => {
     const req = makeReq({ jsonrpc: '2.0', id: 3, method: 'ping' }, { accept: 'application/json' });
     const res = await server.fetch(req);
     expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.result).toEqual({});
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { result: Record<string, never> };
+    expect(response.result).toEqual({});
   });
 
   it('handles ping with SSE response frame', async () => {
@@ -74,8 +76,9 @@ describe('Streamable HTTP Accept handling', () => {
     const bad = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{' });
     const res = await server.fetch(bad);
     expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.error?.code).toBe(-32700);
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { error: { code: number } };
+    expect(response.error?.code).toBe(-32700);
   });
 });
 

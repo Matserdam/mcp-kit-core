@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { MCPServer, createMCPResourceProvider, createMCPResourceTemplateProvider } from '../src/index';
 
-const jsonrpc = async (server: MCPServer, body: any) => {
+const jsonrpc = async (server: MCPServer, body: Record<string, unknown>) => {
   const res = await server.fetch(new Request('http://localhost/mcp', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
   const txt = await res.text();
-  return JSON.parse(txt);
+  return JSON.parse(txt) as Record<string, unknown>;
 };
 
 describe('MCP resources', () => {
@@ -19,9 +19,10 @@ describe('MCP resources', () => {
       }
     ] });
     const resp = await jsonrpc(server, { jsonrpc: '2.0', id: 1, method: 'resources/list' });
-    expect(Array.isArray(resp?.result?.resources)).toBe(true);
-    expect('nextCursor' in (resp?.result ?? {})).toBe(false);
-    const uris = resp.result.resources.map((r: any) => r.uri);
+    const response = resp as { result: { resources: Array<{ uri: string }> } };
+    expect(Array.isArray(response.result?.resources)).toBe(true);
+    expect('nextCursor' in (response.result ?? {})).toBe(false);
+    const uris = response.result.resources.map((r) => r.uri);
     expect(uris).toContain('https://example.com/a');
     expect(uris).toContain('https://example.com/b');
   });
@@ -36,8 +37,9 @@ describe('MCP resources', () => {
       }
     ] });
     const resp = await jsonrpc(server, { jsonrpc: '2.0', id: 2, method: 'resources/read', params: { uri: 'https://example.com' } });
-    expect(Array.isArray(resp?.result?.contents)).toBe(true);
-    expect(resp.result.contents[0].text).toBe('hello');
+    const response = resp as { result: { contents: Array<{ text: string }> } };
+    expect(Array.isArray(response.result?.contents)).toBe(true);
+    expect(response.result.contents[0].text).toBe('hello');
   });
 
   it('resources/templates/list returns templates', async () => {
@@ -53,8 +55,9 @@ describe('MCP resources', () => {
       }
     ] });
     const resp = await jsonrpc(server, { jsonrpc: '2.0', id: 4, method: 'resources/templates/list' });
-    expect(Array.isArray(resp?.result?.resourceTemplates)).toBe(true);
-    expect(resp.result.resourceTemplates[0].uriTemplate).toBe('https://example.com/{id}');
+    const response = resp as { result: { resourceTemplates: Array<{ uriTemplate: string }> } };
+    expect(Array.isArray(response.result?.resourceTemplates)).toBe(true);
+    expect(response.result.resourceTemplates[0].uriTemplate).toBe('https://example.com/{id}');
   });
 
   it('resources/read resolves via template when provider not found', async () => {
@@ -70,13 +73,15 @@ describe('MCP resources', () => {
       }
     ] });
     const resp = await jsonrpc(server, { jsonrpc: '2.0', id: 5, method: 'resources/read', params: { uri: 'https://example.com/123' } });
-    expect(resp?.result?.contents?.[0]?.text).toBe('from-template');
+    const response = resp as { result: { contents: Array<{ text: string }> } };
+    expect(response.result?.contents?.[0]?.text).toBe('from-template');
   });
 
   it('resources/read returns -32002 when not found', async () => {
     const server = new MCPServer({ toolkits: [] });
     const resp = await jsonrpc(server, { jsonrpc: '2.0', id: 3, method: 'resources/read', params: { uri: 'https://nope' } });
-    expect(resp?.error?.code).toBe(-32002);
+    const response = resp as { error: { code: number } };
+    expect(response.error?.code).toBe(-32002);
   });
 });
 

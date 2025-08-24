@@ -18,10 +18,11 @@ describe('MCPServer', () => {
     const server = new MCPServer({ toolkits: [] });
     const res = await server.fetch(new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }) }));
     expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json?.result?.capabilities?.tools).toStrictEqual({ listChanged: true });
-    expect(json?.result?.capabilities?.prompts).toStrictEqual({ listChanged: false });
-    expect(json?.result?.capabilities?.resources).toStrictEqual({ listChanged: false });
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { result: { capabilities: { tools: { listChanged: boolean }; prompts: { listChanged: boolean }; resources: { listChanged: boolean } } } };
+    expect(response.result?.capabilities?.tools).toStrictEqual({ listChanged: true });
+    expect(response.result?.capabilities?.prompts).toStrictEqual({ listChanged: false });
+    expect(response.result?.capabilities?.resources).toStrictEqual({ listChanged: false });
   });
 
   it('tools/list returns tool metadata with namespace', async () => {
@@ -41,8 +42,9 @@ describe('MCPServer', () => {
     });
     const res = await server.fetch(new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'a', method: 'tools/list' }) }));
     expect(res.status).toBe(200);
-    const json = await res.json();
-    const names = (json?.result?.tools ?? []).map((t: any) => t.name);
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { result: { tools: Array<{ name: string }> } };
+    const names = (response.result?.tools ?? []).map((t) => t.name);
     expect(names).toContain('weather_get');
   });
 
@@ -65,8 +67,9 @@ describe('MCPServer', () => {
     const req = new Request('http://localhost', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'weather_get', arguments: { city: 'Paris' } } }) });
     const res = await server.fetch(req);
     expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json?.result?.content?.[0]?.text).toBe('Paris');
+    const json = await res.json() as Record<string, unknown>;
+    const response = json as { result: { content: Array<{ text: string }> } };
+    expect(response.result?.content?.[0]?.text).toBe('Paris');
   });
 });
 
