@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { handleRPC } from '../src/lib/rpc';
-import type { MCPRequest, MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../src/types/server';
-import type { MCPTool, MCPToolkit as TK } from '../src/types/toolkit';
+import type { MCPRequest } from '../src/types/server';
+import type { MCPToolkit as TK, MCPResourceProvider, MCPResourceTemplateProvider } from '../src/types/toolkit';
 
 const makeToolkit = (init: Partial<TK>): TK => ({ namespace: 'ns', tools: [], ...init });
 
@@ -9,8 +9,8 @@ describe('Canonical tools: search and fetch', () => {
   it('tools/list includes canonical search and fetch', async () => {
     const req = { id: 'list', method: 'tools/list' } as MCPRequest;
     const res = await handleRPC(req, []);
-    const tools = (res as any).result.tools as Array<{ name: string }>;
-    const names = tools.map(t => t.name);
+    const response = res as { result: { tools: Array<{ name: string }> } };
+    const names = response.result.tools.map(t => t.name);
     expect(names).toContain('search');
     expect(names).toContain('fetch');
   });
@@ -30,13 +30,20 @@ describe('Canonical tools: search and fetch', () => {
     ];
     const templates: MCPResourceTemplateProvider[] = [
       {
-        descriptor: { uriTemplate: 'https://cdn.example.com/{name}.png', name: 'front' },
+        descriptor: { 
+          uriTemplate: 'https://cdn.example.com/{name}.png', 
+          name: 'front',
+          title: 'Front Image',
+          description: 'Front image template',
+          mimeType: 'image/png'
+        },
         read: () => ({ contents: [{ uri: 'https://cdn.example.com/pikachu.png' }] }),
       },
     ];
     const req = { id: 1, method: 'tools/call', params: { name: 'search', arguments: { query: 'pikachu', site: 'githubusercontent', topK: 1 } } } as MCPRequest;
-    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers as any, resourceTemplates: templates as any })]);
-    const content = (res as any).result.content as any[];
+    const res = await handleRPC(req, [makeToolkit({ namespace: 'x', resources: providers as MCPResourceProvider<unknown>[], resourceTemplates: templates as MCPResourceTemplateProvider<unknown>[] })]);
+    const response = res as { result: { content: Array<{ type: string; uri?: string }> } };
+    const content = response.result.content;
     expect(content[0]).toMatchObject({ type: 'text' });
     const links = content.filter(c => c.type === 'resource_link');
     expect(links.length).toBe(1);
@@ -59,8 +66,14 @@ describe('Canonical tools: search and fetch', () => {
     const target = 'https://cdn.example.com/pikachu.png';
     const templates: MCPResourceTemplateProvider[] = [
       {
-        descriptor: { uriTemplate: 'https://cdn.example.com/{name}.png', name: 'front' },
-        read: (uri) => ({ contents: [{ uri, name: 'front', mimeType: 'image/png', blob: 'BASE64' }] }),
+        descriptor: { 
+          uriTemplate: 'https://cdn.example.com/{name}.png', 
+          name: 'front',
+          title: 'Front Image',
+          description: 'Front image template',
+          mimeType: 'image/png'
+        },
+        read: (uri: string) => ({ contents: [{ uri, name: 'front', mimeType: 'image/png', blob: 'BASE64' }] }),
       },
     ];
     const req = { id: 3, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'pikachu', uri: target } } } as MCPRequest;

@@ -22,7 +22,7 @@ const calcTool: MCPTool<unknown, { a: number; b: number }> = {
   name: 'calculate',
   description: 'Calculate the sum of two numbers, divided by a random number',
   input: { zod: z.object({ a: z.number().min(0), b: z.number().min(0) }) },
-  async run({ a, b }) {
+  run({ a, b }) {
     const result: MCPToolCallResult = {
       content: [{ type: 'text', text: (a + b / Math.max(Math.random(), 1e-6)).toString() }],
     };
@@ -58,6 +58,7 @@ const latencies: number[] = [];
 
 let buffered = '';
 const readLoop = async () => {
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await textReader.read();
     if (done) break;
@@ -140,7 +141,7 @@ const main = async () => {
 
   // Give reader a chance to finish
   await new Promise((r) => setTimeout(r, 20));
-  await controller.stop();
+  await (controller as { stop: () => Promise<void> }).stop();
   await readerPromise;
 
   const end = performance.now();
@@ -172,7 +173,7 @@ const main = async () => {
   // console.log(`[stdio-perf] lat ms avg=${avg.toFixed(2)} p50=${p50.toFixed(2)} p95=${p95.toFixed(2)} p99=${p99.toFixed(2)} max=${max.toFixed(2)}`);
 };
 
-main().catch((err) => {
+main().catch(() => {
   // console.error(err);
   process.exit(1);
 });

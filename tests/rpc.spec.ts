@@ -10,14 +10,16 @@ describe('handleRPC', () => {
     const req: MCPRequest = { id: 1, method: 'initialize', params: {} };
     const res = await handleRPC(req, []);
     expect(res.jsonrpc).toBe('2.0');
-    expect((res as MCPResponse).result && (res as any).result.protocolVersion).toBeDefined();
-    expect((res as any).result.capabilities.tools.listChanged).toBe(true);
+    const response = res as MCPResponse & { result: { protocolVersion: unknown; capabilities: { tools: { listChanged: boolean } } } };
+    expect(response.result && response.result.protocolVersion).toBeDefined();
+    expect(response.result.capabilities.tools.listChanged).toBe(true);
   });
 
   it('responds to ping with empty result', async () => {
     const req: MCPRequest = { id: 99, method: 'ping' } as MCPRequest;
     const res = await handleRPC(req, []);
-    expect((res as any).result).toEqual({});
+    const response = res as { result: Record<string, never> };
+    expect(response.result).toEqual({});
   });
 
   it('lists tools with schemas', async () => {
@@ -30,20 +32,22 @@ describe('handleRPC', () => {
     };
     const req: MCPRequest = { id: 'a', method: 'tools/list' } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
-    const tools = (res as any).result.tools as any[];
-    const found = tools.find((t: any) => t.name === 'ns_t');
+    const response = res as { result: { tools: Array<{ name: string; inputSchema: unknown }> } };
+    const tools = response.result.tools;
+    const found = tools.find((t) => t.name === 'ns_t');
     expect(found).toBeTruthy();
-    expect(found.inputSchema).toBeDefined();
+    expect(found?.inputSchema).toBeDefined();
   });
 
   it('calls a tool and returns MCPToolCallResult', async () => {
     const tool: MCPTool = {
       name: 'sum',
-      run: (args: any) => ({ content: [{ type: 'text', text: String((args?.a ?? 0) + (args?.b ?? 0)) }] }),
+      run: (args: Record<string, unknown>) => ({ content: [{ type: 'text', text: String((args?.a as number ?? 0) + (args?.b as number ?? 0)) }] }),
     } as MCPTool;
     const req: MCPRequest = { id: 2, method: 'tools/call', params: { name: 'ns_sum', arguments: { a: 1, b: 2 } } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
-    expect((res as any).result.content[0].text).toBe('3');
+    const response = res as { result: { content: Array<{ text: string }> } };
+    expect(response.result.content[0].text).toBe('3');
   });
 
   it('errors when toolkit not found', async () => {
