@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.2.20",
+    "@types/debug": "^4.1.12",
     "@types/node": "^20.11.30",
     "@types/protobufjs": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
@@ -47,6 +48,7 @@
     "zod": "^3.23.8"
   },
   "dependencies": {
+    "debug": "^4.3.4",
     "protobufjs": "^7.5.4",
     "zod-to-json-schema": "^3.24.6"
   }
