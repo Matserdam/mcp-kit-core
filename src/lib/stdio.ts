@@ -44,7 +44,7 @@ export class StdioController implements MCPStdioController {
 
     // Convert Node streams to Web streams when needed.
     // We detect Web ReadableStream by the presence of getReader().
-    const inputStream: ReadableStream<Uint8Array> = (input as any)?.getReader
+    const inputStream: ReadableStream<Uint8Array> = (input as { getReader?: unknown })?.getReader
       ? (input as unknown as ReadableStream<Uint8Array>)
       : new ReadableStream<Uint8Array>({
         // Bridge NodeJS.ReadStream → Web ReadableStream
@@ -59,7 +59,7 @@ export class StdioController implements MCPStdioController {
       });
 
     // Detect Web WritableStream by the presence of getWriter().
-    const outputStream: WritableStream<Uint8Array> = (output as any)?.getWriter
+    const outputStream: WritableStream<Uint8Array> = (output as { getWriter?: unknown })?.getWriter
       ? (output as unknown as WritableStream<Uint8Array>)
       : new WritableStream<Uint8Array>({
         // Bridge Web WritableStream → NodeJS.WriteStream
