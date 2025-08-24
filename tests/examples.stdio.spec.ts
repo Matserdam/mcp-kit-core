@@ -11,7 +11,7 @@ const jsonrpc = async (fetcher: (body: Record<string, unknown>) => Promise<Respo
 describe('example: mcp-simple-bun-stdio (via fetch handler)', () => {
   it('echo and sum tools respond', async () => {
     const server: MCPServer = createServer();
-    const fetcher = (body: Record<string, unknown>): Promise<Response> => server.fetch(new Request('http://local/mcp', { method: 'POST', body: JSON.stringify(body) }));
+    const fetcher: (body: Record<string, unknown>) => Promise<Response> = (body: Record<string, unknown>): Promise<Response> => server.fetch(new Request('http://local/mcp', { method: 'POST', body: JSON.stringify(body) }));
 
     const init = await jsonrpc(fetcher, { jsonrpc: '2.0', id: 1, method: 'initialize' });
     const initResponse = init as { jsonrpc: string };
