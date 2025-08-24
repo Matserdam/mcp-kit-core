@@ -225,3 +225,31 @@ message ComplianceValidation {
   bytes actual_message = 4;  // JSON encoded actual message
   bytes expected_schema = 5; // JSON encoded expected schema
 }
+
+// Authentication and Authorization messages
+message AuthRequest {
+  string token = 1;
+  string resource_uri = 2;
+  string transport_type = 3; // "http" or "stdio"
+}
+
+message AuthResponse {
+  bool valid = 1;
+  User user = 2;
+  repeated string scopes = 3;
+  string error_message = 4;
+  int32 status_code = 5;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  repeated string permissions = 4;
+}
+
+message AuthError {
+  string error = 1;
+  string error_description = 2;
+  int32 status_code = 3;
+}

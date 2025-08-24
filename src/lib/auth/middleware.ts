@@ -10,7 +10,23 @@ import type {
 import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors';
 import { executeAuth, validateAuthMiddleware } from './executor';
 
-// Auth middleware manager for handling auth across toolkits
+/**
+ * Auth middleware manager for handling authentication across multiple toolkits.
+ * 
+ * Provides centralized auth execution, validation, and context creation for MCP servers.
+ * Supports both HTTP OAuth 2.1 and STDIO environment-based authentication patterns.
+ * 
+ * @example
+ * ```typescript
+ * const authManager = new MCPAuthMiddlewareManager();
+ * 
+ * // Execute auth for a toolkit
+ * const result = await authManager.executeToolkitAuth(toolkit, request, env);
+ * 
+ * // Create auth context for request processing
+ * const context = await createAuthContext(request, env, toolkits, authManager);
+ * ```
+ */
 export class MCPAuthMiddlewareManager {
   private resourceUriExtractor: MCPResourceUriExtractor;
 
