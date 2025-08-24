@@ -1,6 +1,6 @@
 /**
  * Namespaced debug utility for MCP Kit using the official debug package
- * Replaces console.* usage with proper debug namespacing
+ * Replaces console usage with proper debug namespacing
  */
 
 import debug from 'debug';
