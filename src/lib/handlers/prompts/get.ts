@@ -1,4 +1,4 @@
-import type { MCPRequest, MCPResponse, MCPPROMPTSGetResult, MCPPromptGetParams } from '../../../types/server';
+import type { MCPRequest, MCPResponse, MCPPROMPTSGetResult } from '../../../types/server';
 import type { MCPToolkit } from '../../../types/toolkit';
 
 export const handlePromptsGet = async (

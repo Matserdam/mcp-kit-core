@@ -1,4 +1,4 @@
-import type { InitializeResult, MCPResponse } from '../../types/server';
+import type { MCPResponse } from '../../types/server';
 
 export function handleInitialize(id: string | number | null, params: unknown): MCPResponse {
   const requestedProtocol = (params as unknown as { protocolVersion?: unknown })?.protocolVersion;
@@ -6,7 +6,7 @@ export function handleInitialize(id: string | number | null, params: unknown): M
     ? requestedProtocol
     : '2025-06-18';
 
-  const result: InitializeResult = {
+  const result = {
     protocolVersion,
     serverInfo: { name: 'mcp-kit', version: '0.0.1' },
     capabilities: { tools: { listChanged: true }, prompts: { listChanged: false }, resources: { listChanged: false } },

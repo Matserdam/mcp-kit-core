@@ -8,9 +8,9 @@ export const runSearch = (
 ): MCPResponse => {
   const args: unknown = params.arguments ?? {};
   const argsObj = (typeof args === 'object' && args !== null) ? args as Record<string, unknown> : {};
-  const queryUnknown = argsObj.query as unknown;
-  const topK: number | undefined = typeof argsObj.topK === 'number' ? argsObj.topK as number : undefined;
-  const siteRaw = argsObj.site as unknown;
+  const queryUnknown = argsObj.query;
+  const topK: number | undefined = typeof argsObj.topK === 'number' ? argsObj.topK : undefined;
+  const siteRaw = argsObj.site;
   const site: string | undefined = typeof siteRaw === 'string' && siteRaw.length > 0 ? siteRaw : undefined;
 
   if (typeof queryUnknown !== 'string' || queryUnknown.length === 0) {
@@ -87,7 +87,7 @@ export const runSearch = (
     results: limitedResources.map((r) => ({ title: r.title || r.name || r.uri, url: r.uri, snippet: r.description })),
     templates: filteredTemplates,
     total: { resources: filteredResources.length, templates: filteredTemplates.length },
-  } as Record<string, unknown>;
+  };
 
   const result: MCPToolCallResult = { content, structuredContent };
   return { jsonrpc: '2.0', id, result };

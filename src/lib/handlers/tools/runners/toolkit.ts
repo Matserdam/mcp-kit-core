@@ -6,7 +6,7 @@ export const runToolkitTool = async (
   params: MCPToolsCallParams,
   toolkits: MCPToolkit[]
 ): Promise<MCPResponse> => {
-  const normalizedName = params.name as string;
+  const normalizedName = params.name;
 
   let namespace: string | undefined;
   let toolName: string | undefined;

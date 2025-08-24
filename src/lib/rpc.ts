@@ -1,4 +1,4 @@
-import { MCPRequest, MCPResponse, MCPResourceReadParams } from "../types/server";
+import { MCPRequest, MCPResponse } from "../types/server";
 import { MCPToolkit } from "../types/toolkit";
 
 // No helper needed; arguments are already provided in the correct shape
@@ -31,7 +31,7 @@ export const handleRPC = async (request: MCPRequest, toolkits: MCPToolkit[]): Pr
     case 'resources/list':
       return handleResourcesList(id, toolkits);
     case 'resources/read':
-      return handleResourcesRead(id, params as MCPResourceReadParams, toolkits, { requestId: id });
+      return handleResourcesRead(id, params, toolkits, { requestId: id });
     case 'resources/templates/list':
       return handleResourceTemplatesList(id, toolkits);
     case 'tools/call':

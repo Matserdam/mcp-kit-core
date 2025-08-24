@@ -18,8 +18,10 @@ export const handleResourcesRead = async (
   const provider: MCPResourceProvider<unknown> | undefined = providers.find((p) => p.uri === (uri as ResourceUri));
   if (provider) {
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
-    const context = await (tk?.createContext?.(contextInit) ?? {});
-    const result = await provider.read(context as unknown);
+    const contextResult = tk?.createContext?.(contextInit) ?? {};
+    const context = contextResult instanceof Promise ? await contextResult : contextResult;
+    const resultPromise = provider.read(context as unknown);
+    const result = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
 
@@ -28,8 +30,10 @@ export const handleResourcesRead = async (
     const { ok, params: pathParams } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
     if (!ok) continue;
     const tk = toolkits.find((t) => (t.resourceTemplates ?? []).includes(tpl));
-    const context = await (tk?.createContext?.(contextInit) ?? {});
-    const result = await tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }) as unknown);
+    const contextResult = tk?.createContext?.(contextInit) ?? {};
+    const context = contextResult instanceof Promise ? await contextResult : contextResult;
+    const resultPromise = tpl.read(uri as ResourceUri, Object.assign({}, context, { params: pathParams }) as unknown);
+    const result = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
   }
 
