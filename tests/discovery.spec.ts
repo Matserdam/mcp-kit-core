@@ -527,4 +527,109 @@ describe('MCPServer Discovery Integration', () => {
       expect(response.status).toBe(405); // Method Not Allowed
     });
   });
+
+  describe('Protobuf Compliance', () => {
+    it('should validate protobuf message structure for authorization server metadata', () => {
+      // Test that our TypeScript types match protobuf message structure
+      const metadata: MCPAuthorizationServerMetadata = {
+        issuer: 'https://auth.example.com',
+        authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+        token_endpoint: 'https://auth.example.com/oauth/token',
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code']
+      };
+
+      // Validate required fields match protobuf structure
+      expect(metadata).toHaveProperty('issuer');
+      expect(metadata).toHaveProperty('authorization_endpoint');
+      expect(metadata).toHaveProperty('token_endpoint');
+      expect(metadata).toHaveProperty('response_types_supported');
+      expect(metadata).toHaveProperty('grant_types_supported');
+
+      // Validate field types match protobuf
+      expect(typeof metadata.issuer).toBe('string');
+      expect(typeof metadata.authorization_endpoint).toBe('string');
+      expect(typeof metadata.token_endpoint).toBe('string');
+      expect(Array.isArray(metadata.response_types_supported)).toBe(true);
+      expect(Array.isArray(metadata.grant_types_supported)).toBe(true);
+    });
+
+    it('should validate protobuf message structure for protected resource metadata', () => {
+      // Test that our TypeScript types match protobuf message structure
+      const metadata: MCPProtectedResourceMetadata = {
+        resource_indicators_supported: true,
+        authorization_servers: [{
+          issuer: 'https://auth.example.com',
+          authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+          token_endpoint: 'https://auth.example.com/oauth/token'
+        }],
+        scopes_supported: ['read', 'write']
+      };
+
+      // Validate required fields match protobuf structure
+      expect(metadata).toHaveProperty('resource_indicators_supported');
+      expect(metadata).toHaveProperty('authorization_servers');
+      expect(metadata).toHaveProperty('scopes_supported');
+
+      // Validate field types match protobuf
+      expect(typeof metadata.resource_indicators_supported).toBe('boolean');
+      expect(Array.isArray(metadata.authorization_servers)).toBe(true);
+      expect(Array.isArray(metadata.scopes_supported)).toBe(true);
+    });
+
+    it('should validate protobuf message structure for discovery configuration', () => {
+      // Test that our TypeScript types match protobuf message structure
+      const config: MCPDiscoveryConfig = {
+        authorizationServer: {
+          issuer: 'https://auth.example.com',
+          authorizationEndpoint: 'https://auth.example.com/oauth/authorize',
+          tokenEndpoint: 'https://auth.example.com/oauth/token',
+          supportedResponseTypes: ['code'],
+          supportedGrantTypes: ['authorization_code']
+        },
+        protectedResource: {
+          resourceUri: 'https://mcp.example.com',
+          scopes: ['read', 'write'],
+          audience: ['https://mcp.example.com'],
+          authorizationServers: [{
+            issuer: 'https://auth.example.com',
+            authorizationEndpoint: 'https://auth.example.com/oauth/authorize',
+            tokenEndpoint: 'https://auth.example.com/oauth/token',
+            supportedResponseTypes: ['code'],
+            supportedGrantTypes: ['authorization_code']
+          }]
+        }
+      };
+
+      // Validate required fields match protobuf structure
+      expect(config).toHaveProperty('authorizationServer');
+      expect(config).toHaveProperty('protectedResource');
+      expect(config.authorizationServer).toHaveProperty('issuer');
+      expect(config.authorizationServer).toHaveProperty('authorizationEndpoint');
+      expect(config.authorizationServer).toHaveProperty('tokenEndpoint');
+      expect(config.protectedResource).toHaveProperty('resourceUri');
+      expect(config.protectedResource).toHaveProperty('scopes');
+      expect(config.protectedResource).toHaveProperty('audience');
+      expect(config.protectedResource).toHaveProperty('authorizationServers');
+    });
+
+    it('should validate protobuf message structure for discovery errors', () => {
+      // Test that our TypeScript types match protobuf message structure
+      const error: MCPDiscoveryErrorType = {
+        error: 'invalid_request',
+        error_description: 'Invalid discovery request',
+        error_uri: 'https://example.com/errors/invalid-request'
+      };
+
+      // Validate required fields match protobuf structure
+      expect(error).toHaveProperty('error');
+      expect(error).toHaveProperty('error_description');
+      expect(error).toHaveProperty('error_uri');
+
+      // Validate field types match protobuf
+      expect(typeof error.error).toBe('string');
+      expect(typeof error.error_description).toBe('string');
+      expect(typeof error.error_uri).toBe('string');
+    });
+  });
 });

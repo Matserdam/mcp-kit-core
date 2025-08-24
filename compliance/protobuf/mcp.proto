@@ -338,3 +338,82 @@ message DiscoveryError {
   string error_description = 2;
   string error_uri = 3;
 }
+
+// Well-Known Endpoint Request/Response messages
+message WellKnownRequest {
+  string endpoint = 1; // "oauth-authorization-server" or "oauth-protected-resource"
+  map<string, string> headers = 2; // Request headers
+  string method = 3; // HTTP method (GET, OPTIONS)
+}
+
+message WellKnownResponse {
+  int32 status_code = 1;
+  map<string, string> headers = 2;
+  bytes body = 3; // JSON encoded response body
+  string content_type = 4;
+}
+
+// Well-Known Endpoint specific messages
+message WellKnownOAuthAuthorizationServerRequest {
+  // GET /.well-known/oauth-authorization-server
+  // No parameters required per RFC 8414
+}
+
+message WellKnownOAuthAuthorizationServerResponse {
+  AuthorizationServerMetadata metadata = 1;
+  map<string, string> headers = 2; // Response headers including CORS
+}
+
+message WellKnownOAuthProtectedResourceRequest {
+  // GET /.well-known/oauth-protected-resource
+  // No parameters required per RFC 9728
+}
+
+message WellKnownOAuthProtectedResourceResponse {
+  ProtectedResourceMetadata metadata = 1;
+  map<string, string> headers = 2; // Response headers including CORS
+}
+
+// CORS Preflight messages
+message CORSPreflightRequest {
+  string origin = 1;
+  string method = 2;
+  repeated string headers = 3;
+}
+
+message CORSPreflightResponse {
+  int32 status_code = 1;
+  map<string, string> headers = 2;
+}
+
+// Discovery Configuration messages
+message DiscoveryConfiguration {
+  AuthorizationServerConfig authorization_server = 1;
+  ProtectedResourceConfig protected_resource = 2;
+  bool enable_discovery_endpoints = 3;
+  int32 discovery_cache_ttl = 4;
+}
+
+message AuthorizationServerConfig {
+  string issuer = 1;
+  string authorization_endpoint = 2;
+  string token_endpoint = 3;
+  string introspection_endpoint = 4;
+  string revocation_endpoint = 5;
+  string registration_endpoint = 6;
+  repeated string supported_response_types = 7;
+  repeated string supported_grant_types = 8;
+  repeated string supported_code_challenge_methods = 9;
+  repeated string supported_scopes = 10;
+  repeated string supported_token_auth_methods = 11;
+  repeated string supported_introspection_auth_methods = 12;
+  repeated string supported_revocation_auth_methods = 13;
+}
+
+message ProtectedResourceConfig {
+  string resource_uri = 1;
+  repeated string scopes = 2;
+  repeated string audience = 3;
+  repeated AuthorizationServerConfig authorization_servers = 4;
+  repeated string resource_signing_algorithms = 5;
+}
