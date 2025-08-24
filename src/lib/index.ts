@@ -133,7 +133,7 @@ export class MCPServer {
 
   public startStdio = (options?: MCPStdioOptions): MCPStdioController => {
     const controller = new StdioController(this.options.toolkits, options);
-    controller.start().catch(() => {});
+    controller.start();
     return controller;
   }
 }
