@@ -1,7 +1,7 @@
 import type { MCPResponse } from '../../types/server';
 
 export function handleInitialize(id: string | number | null, params: unknown): MCPResponse {
-  const requestedProtocol = (params as unknown as { protocolVersion?: unknown })?.protocolVersion;
+  const requestedProtocol = (params as { protocolVersion?: unknown })?.protocolVersion;
   const protocolVersion = typeof requestedProtocol === 'string' && requestedProtocol.length > 0
     ? requestedProtocol
     : '2025-06-18';

@@ -121,7 +121,7 @@ export class StdioController implements MCPStdioController {
       params,
     } as const;
 
-    this.queueWrite(textEncoder.encode(JSON.stringify(notification) + '\n'));
+    void this.queueWrite(textEncoder.encode(JSON.stringify(notification) + '\n'));
     return true;
   }
 
@@ -151,14 +151,14 @@ export class StdioController implements MCPStdioController {
           try {
             const request = JSON.parse(line) as MCPRequest;
             const response = await handleRPC(request, this.toolkits);
-            this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
+            void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
           } catch {
             const errorResponse: MCPResponse = {
               jsonrpc: '2.0',
               id: null,
               error: { code: -32700, message: 'Parse error' },
             };
-            this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
+            void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
           }
         }
       }
@@ -168,14 +168,14 @@ export class StdioController implements MCPStdioController {
         try {
           const request = JSON.parse(bufferedText) as MCPRequest;
           const response = await handleRPC(request, this.toolkits);
-          this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
+          void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
         } catch {
           const errorResponse: MCPResponse = {
             jsonrpc: '2.0',
             id: null,
             error: { code: -32700, message: 'Parse error' },
           };
-          this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
+                      void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
         }
       }
     } catch {
