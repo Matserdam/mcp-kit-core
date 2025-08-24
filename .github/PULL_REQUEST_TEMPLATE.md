@@ -1,50 +1,95 @@
-## PR Title
+# Pull Request
 
-Use Conventional Commits: `<type>(<scope>): <summary>`
+## 📋 Checklist
 
-Examples:
-- `feat(core): implement capability registration API`
-- `docs(project): add @mcp-kit/core overview`
+### 🚀 **Before submitting**
+- [ ] **Tests**: All tests pass (`bun run test`)
+- [ ] **Linting**: No lint errors (`bun run lint`)
+- [ ] **Build**: Project builds successfully (`bun run build`)
+- [ ] **Size Budgets**: Within limits (dist ≤ 600KB, largest file ≤ 200KB, cold-start ≤ 25ms)
+- [ ] **Console Usage**: No `console.*` in core library (`src/lib/**`)
 
-## Summary
+### 🔒 **Security & Quality**
+- [ ] **Dependencies**: No new high-risk dependencies added
+- [ ] **SBOM**: SBOM generation works (if applicable)
+- [ ] **Type Safety**: No `as any` type assertions added
+- [ ] **Error Handling**: Proper error handling implemented
+- [ ] **Input Validation**: All inputs validated with Zod schemas
 
-Describe what this PR changes and why.
+### 📚 **Documentation**
+- [ ] **README**: Updated if public API changed
+- [ ] **Changelog**: Entry added for user-facing changes
+- [ ] **Comments**: Complex logic documented
+- [ ] **Examples**: Examples updated if API changed
 
-## Checklist
+### 🧪 **Testing**
+- [ ] **Coverage**: New code has test coverage
+- [ ] **Edge Cases**: Edge cases tested
+- [ ] **Integration**: Integration tests pass
+- [ ] **Performance**: No performance regressions
 
-### Code Quality
-- [ ] Title uses Conventional Commits format
-- [ ] Scope is appropriate (core, transport, handler, config, sdk, docs, examples, release, test, build, ci, dx)
-- [ ] `bun run build` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run test` passes
-- [ ] `bun run check:types` passes
-- [ ] No console.log statements in core library (src/lib/**)
-- [ ] RPC method cases are alphabetically ordered
+### 🔄 **Process**
+- [ ] **Branch**: Created from `main` or `develop`
+- [ ] **Commits**: Clear, descriptive commit messages
+- [ ] **Scope**: Single logical change per PR
+- [ ] **Review**: Self-review completed
 
-### Documentation
-- [ ] README updated if needed
-- [ ] API documentation updated if needed
-- [ ] CHANGELOG.md updated for user-facing changes
-- [ ] Examples updated if API changed
+---
 
-### Quality Gates
-- [ ] Size budget check passes (≤ 600 KB dist size)
-- [ ] Cold-start time check passes (≤ 25ms)
-- [ ] SBOM generation succeeds
-- [ ] No high-risk vulnerabilities introduced
+## 📝 **Description**
 
-### Process
-- [ ] Self-review completed
-- [ ] Code follows project conventions
-- [ ] Tests cover new functionality
-- [ ] Breaking changes documented
+<!-- Describe your changes here -->
 
-## Breaking Changes
+## 🎯 **Type of Change**
 
-- [ ] None
-- If breaking, explain impact and add `BREAKING CHANGE:` in commit body
+- [ ] 🐛 Bug fix
+- [ ] ✨ New feature
+- [ ] 💥 Breaking change
+- [ ] 📚 Documentation update
+- [ ] 🔧 Refactoring
+- [ ] ⚡ Performance improvement
+- [ ] 🔒 Security fix
+- [ ] 🧪 Test update
 
-## Screenshots/Notes
+## 🔗 **Related Issues**
 
-Optional additional context.
+<!-- Link to related issues, e.g., "Closes #123" -->
+
+## 📊 **Testing**
+
+<!-- Describe how you tested your changes -->
+
+## 📸 **Screenshots** (if applicable)
+
+<!-- Add screenshots for UI changes -->
+
+## ✅ **Checklist Verification**
+
+<!-- The following will be verified by reviewers -->
+
+### **Automated Checks**
+- [ ] ✅ CI pipeline passes
+- [ ] ✅ Size budgets within limits
+- [ ] ✅ No console.* usage in core
+- [ ] ✅ All tests pass
+- [ ] ✅ Linting passes
+
+### **Manual Review**
+- [ ] ✅ Code follows project conventions
+- [ ] ✅ No security vulnerabilities introduced
+- [ ] ✅ Documentation updated appropriately
+- [ ] ✅ Performance impact assessed
+
+---
+
+## 🚨 **Breaking Changes**
+
+<!-- List any breaking changes and migration steps -->
+
+## 📈 **Performance Impact**
+
+<!-- Describe any performance impact -->
+
+## 🔍 **Additional Notes**
+
+<!-- Any additional information for reviewers -->
