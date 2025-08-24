@@ -7,6 +7,12 @@ import type {
   MCPRequestWithHeaders
 } from '../../types/auth';
 import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors';
+import { 
+  extractBearerToken, 
+  validateTokenWithSecurity,
+  type MCPOAuthTokenInfo
+} from './oauth21';
+import { createAuthAuditLog } from './audit-logger';
 
 // Default resource URI extractor
 const defaultResourceUriExtractor: MCPResourceUriExtractor = {
@@ -31,35 +37,86 @@ const defaultResourceUriExtractor: MCPResourceUriExtractor = {
   }
 };
 
-// HTTP auth execution
+// HTTP auth execution with OAuth 2.1 compliance
 export async function executeHTTPAuth<TMiddleware>(
   request: MCPRequestWithHeaders,
   auth: MCPHTTPAuthMiddleware<TMiddleware>,
   resourceUriExtractor: MCPResourceUriExtractor = defaultResourceUriExtractor
 ): Promise<MCPAuthResult<TMiddleware>> {
-  // Extract authorization header
-  const headers = request.headers;
-  const authHeader = headers?.authorization || headers?.Authorization;
+  // Extract Bearer token using OAuth 2.1 compliant extraction
+  const token = extractBearerToken(request);
   
-  if (!authHeader) {
+  if (!token) {
     const error = new MCPAuthError('Authorization header required', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
     if (auth.onAuthError) {
       auth.onAuthError(error);
     }
+    createAuthAuditLog('token_validation', { error: 'missing_authorization_header' }, request);
     throw error;
   }
   
-  // Validate Bearer token format
-  if (!authHeader.startsWith('Bearer ')) {
-    const error = new MCPAuthError('Invalid authorization header format', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
-    if (auth.onAuthError) {
-      auth.onAuthError(error);
-    }
-    throw error;
-  }
-  
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
   const resourceUri = resourceUriExtractor.extractUri(request);
+  
+  // Enhanced token validation with OAuth 2.1 security checks
+  if (auth.validateTokenWithSecurity) {
+    // Use enhanced validation if available
+    const requiredScopes = auth.requiredScopes || [];
+    
+    // Create a wrapper that handles null returns
+    const tokenValidator = async (token: string): Promise<MCPOAuthTokenInfo> => {
+      const result = await auth.validateTokenWithSecurity!(token);
+      if (!result) {
+        throw new Error('Token validation returned null');
+      }
+      return result;
+    };
+    
+    const validationResult = await validateTokenWithSecurity(
+      token, 
+      resourceUri, 
+      requiredScopes,
+      tokenValidator
+    );
+    
+    if (!validationResult.isValid) {
+      // Log security issues
+      createAuthAuditLog('token_validation', { 
+        securityIssues: validationResult.securityIssues,
+        resourceUri 
+      }, request);
+      
+      // Determine appropriate error response
+      const criticalIssues = validationResult.securityIssues.filter(issue => issue.severity === 'critical');
+      const highIssues = validationResult.securityIssues.filter(issue => issue.severity === 'high');
+      
+      if (criticalIssues.length > 0) {
+        const error = new MCPAuthError('Invalid token', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
+        if (auth.onAuthError) {
+          auth.onAuthError(error);
+        }
+        throw error;
+      } else if (highIssues.length > 0) {
+        const error = new MCPAuthError('Token expired', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
+        if (auth.onAuthError) {
+          auth.onAuthError(error);
+        }
+        throw error;
+      } else {
+        const error = new MCPAuthError('Insufficient scope', MCP_AUTH_ERROR_CODES.FORBIDDEN);
+        if (auth.onAuthError) {
+          auth.onAuthError(error);
+        }
+        throw error;
+      }
+    }
+    
+    // Log successful validation
+    createAuthAuditLog('auth_success', { 
+      user: validationResult.user,
+      scopes: validationResult.scopes,
+      resourceUri 
+    }, request);
+  }
   
   // Validate token using user-provided validator
   const middleware = await auth.validateToken(token, resourceUri, request);
@@ -68,6 +125,7 @@ export async function executeHTTPAuth<TMiddleware>(
     if (auth.onAuthError) {
       auth.onAuthError(error);
     }
+    createAuthAuditLog('token_validation', { error: 'token_validation_failed' }, request);
     throw error;
   }
   

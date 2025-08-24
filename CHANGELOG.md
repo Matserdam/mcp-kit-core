@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Authentication & Security
+- **OAuth 2.1 Compliance**: Complete OAuth 2.1 protocol compliance implementation with comprehensive testing
+  - Fixed TypeScript errors in `oauth21.compliance.spec.ts` for proper type safety
+  - Implemented Resource Indicators (RFC 8707) with URI validation and canonicalization
+  - Added token audience validation with proper security binding
+  - Enhanced security audit logging with comprehensive event tracking
+  - Added Bearer token extraction with case-insensitive header handling
+  - Integrated OAuth 2.1 error responses with proper HTTP status codes
+  - All 22 compliance tests passing for production-ready OAuth 2.1 support
+  - Updated documentation with compliance testing guide and certification requirements
+
 ### Code Quality & Type Safety
 - **Type Safety**: Enforced `createContext` must return `Record<string, unknown>` in type definitions
 - **Lint Cleanup**: Fixed all 293 lint errors throughout core library, tests, and examples

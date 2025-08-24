@@ -35,6 +35,7 @@ export interface MCPAuthMiddleware<TMiddleware> {
  *     const user = await myOAuthProvider.validateToken(token, resourceUri);
  *     return user ? { user, permissions: user.permissions } : null;
  *   },
+ *   requiredScopes: ['read', 'write'], // Optional: required scopes for this middleware
  *   onAuthError: (error) => {
  *     console.error('Auth error:', error.message);
  *   }
@@ -58,6 +59,21 @@ export interface MCPHTTPAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<TM
     resourceUri: string,
     request: MCPRequestWithHeaders
   ) => Promise<TMiddleware | null>;
+  
+  /**
+   * Optional: Required scopes for this middleware.
+   * If provided, tokens must include all these scopes to be valid.
+   */
+  requiredScopes?: string[];
+  
+  /**
+   * Optional: Enhanced token validation with OAuth 2.1 security checks.
+   * If provided, this will be used for comprehensive security validation.
+   * Should return OAuth 2.1 token information for security analysis.
+   */
+  validateTokenWithSecurity?: (
+    token: string
+  ) => Promise<import('../lib/auth/oauth21').MCPOAuthTokenInfo | null>;
   
   /**
    * Optional callback for custom error handling.
