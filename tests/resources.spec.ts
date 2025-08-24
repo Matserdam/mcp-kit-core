@@ -13,8 +13,8 @@ describe('MCP resources', () => {
       {
         namespace: 'demo',
         resources: [
-          createMCPResourceProvider({ uri: 'https://example.com/a', name: 'a', async read() { return { contents: [{ uri: 'https://example.com/a', text: 'A' }] }; } }),
-          createMCPResourceProvider({ uri: 'https://example.com/b', name: 'b', async read() { return { contents: [{ uri: 'https://example.com/b', text: 'B' }] }; } }),
+          createMCPResourceProvider({ uri: 'https://example.com/a', name: 'a', read() { return { contents: [{ uri: 'https://example.com/a', text: 'A' }] }; } }),
+          createMCPResourceProvider({ uri: 'https://example.com/b', name: 'b', read() { return { contents: [{ uri: 'https://example.com/b', text: 'B' }] }; } }),
         ],
       }
     ] });
@@ -31,7 +31,7 @@ describe('MCP resources', () => {
       {
         namespace: 'demo',
         resources: [
-          createMCPResourceProvider({ uri: 'https://example.com', name: 'res', async read() { return { contents: [{ uri: 'https://example.com', text: 'hello' }] }; } }),
+          createMCPResourceProvider({ uri: 'https://example.com', name: 'res', read() { return { contents: [{ uri: 'https://example.com', text: 'hello' }] }; } }),
         ],
       }
     ] });
@@ -47,7 +47,7 @@ describe('MCP resources', () => {
         resourceTemplates: [
           createMCPResourceTemplateProvider({
             descriptor: { uriTemplate: 'https://example.com/{id}', name: 'Example', title: 'Example Tpl' },
-            read: async (uri: string) => ({ contents: [{ uri, text: '' }] }),
+            read: (uri: string) => ({ contents: [{ uri, text: '' }] }),
           }),
         ],
       }
@@ -64,7 +64,7 @@ describe('MCP resources', () => {
         resourceTemplates: [
           createMCPResourceTemplateProvider({
             descriptor: { uriTemplate: 'https://example.com/{id}', name: 'Example' },
-            read: async (uri: string) => ({ contents: [{ uri, text: 'from-template' }] }),
+            read: (uri: string) => ({ contents: [{ uri, text: 'from-template' }] }),
           }),
         ],
       }

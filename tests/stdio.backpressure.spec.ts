@@ -43,7 +43,7 @@ describe('StdioController backpressure', () => {
     const b = encoder.encode(line.slice(5));
 
     const out: Uint8Array[] = [];
-    const controller = new StdioController([], { input: makeReadable([a, b]) as unknown as any, output: makeWritable(out) as unknown as any });
+    const controller = new StdioController([], { input: makeReadable([a, b]) as unknown as ReadableStream<Uint8Array>, output: makeWritable(out) as unknown as WritableStream<Uint8Array> });
     await controller.start();
     // allow loop to process
     await new Promise((r) => setTimeout(r, 10));

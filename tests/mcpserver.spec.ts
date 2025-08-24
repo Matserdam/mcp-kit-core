@@ -33,7 +33,7 @@ describe('MCPServer', () => {
             {
               name: 'get',
               description: 'Get weather',
-              run: async () => ({ tempC: 20 }),
+              run: () => ({ tempC: 20 }),
             },
           ],
         },
@@ -56,7 +56,7 @@ describe('MCPServer', () => {
               name: 'get',
               description: 'Get weather',
               input: { zod: z.object({ city: z.string() }) },
-              run: async (input: { city: string }) => ({ content: [{ type: 'text', text: input.city }] }),
+              run: (input: { city: string }) => ({ content: [{ type: 'text', text: input.city }] }),
             },
           ],
         },

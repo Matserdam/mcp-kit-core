@@ -11,7 +11,7 @@ describe('canonical fetch resolves via providers/templates (async)', () => {
       resources: [{
         uri: 'custom://doc',
         name: 'doc',
-        read: async () => ({ contents: [{ uri: 'custom://doc' as ResourceUri, text: 'ok', mimeType: 'text/plain' }] }),
+        read: () => ({ contents: [{ uri: 'custom://doc' as ResourceUri, text: 'ok', mimeType: 'text/plain' }] }),
       }] as any,
     });
     const req: MCPRequest = { id: 1, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'doc', uri: 'custom://doc' } } } as any;
@@ -25,7 +25,7 @@ describe('canonical fetch resolves via providers/templates (async)', () => {
     const tk = makeToolkit({
       resourceTemplates: [{
         descriptor: { uriTemplate: 'notes://{name}', name: 'notes' },
-        read: async (uri: ResourceUri) => ({ contents: [{ uri, text: 'hello', mimeType: 'text/plain' }] }),
+        read: (uri: ResourceUri) => ({ contents: [{ uri, text: 'hello', mimeType: 'text/plain' }] }),
       }] as any,
     });
     const req: MCPRequest = { id: 2, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'n', uri: 'notes://readme' } } } as any;
