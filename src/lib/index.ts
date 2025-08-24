@@ -59,7 +59,7 @@ export class MCPServer {
     }
   }
 
-  async fetch(request: Request): Promise<Response> {
+  fetch = async (request: Request): Promise<Response> => {
     const method = request.method.toUpperCase();
     const url = new URL(request.url);
 
@@ -160,7 +160,7 @@ export class MCPServer {
     }
     
     return defaultCORSHandler.addCORSHeaders(finalResponse, request);
-  }
+  };
 
   public stdio(): void {
     // Placeholder for stdio transport

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Bug Fixes
+- **Fixed MCP Server `this` Binding Issue**: Converted `fetch` method to arrow function to preserve `this` context when mounted in frameworks like Hono
+  - **Issue**: `TypeError: undefined is not an object (evaluating 'this.discoveryHandler')` when accessing MCP server endpoints
+  - **Root Cause**: Method binding lost when `mcpServer.fetch` was passed as callback to framework mount functions
+  - **Solution**: Changed `async fetch(request: Request): Promise<Response>` to arrow function `fetch = async (request: Request): Promise<Response> =>`
+  - **Impact**: Enables proper MCP server integration with web frameworks while maintaining discovery handler access
+  - **Testing**: Verified fix resolves binding issues in Supabase auth example project
+
 ### Authentication & Authorization
 - **Toolkit-Based Authentication**: Complete redesign of authentication system for production-ready security
   - **Architectural Improvement**: Moved from inefficient global authentication to per-toolkit authentication
