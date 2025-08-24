@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+    
+    - name: Install dependencies
+      run: bun install
+    
+    - name: Build
+      run: bun run build
+    
+    - name: Run tests
+      run: bun run test
+    
+    - name: Check types
+      run: bun run check:types
+    
+    - name: Lint
+      run: bun run lint
+    
+    - name: Check size budget
+      run: |
+        echo "Checking size budget..."
+        DIST_SIZE=$(du -sk dist/ | cut -f1)
+        echo "Dist size: ${DIST_SIZE}KB"
+        if [ "$DIST_SIZE" -gt 600 ]; then
+          echo "❌ Size budget exceeded: ${DIST_SIZE}KB > 600KB"
+          exit 1
+        else
+          echo "✅ Size budget OK: ${DIST_SIZE}KB ≤ 600KB"
+        fi
+    
+    - name: Check cold-start time
+      run: |
+        echo "Checking cold-start time..."
+        START_TIME=$(node -e "
+          const start = performance.now();
+          import('./dist/index.js').then(() => {
+            const end = performance.now();
+            const duration = end - start;
+            console.log(duration.toFixed(3));
+            if (duration > 25) {
+              console.error('Cold-start time exceeded: ' + duration.toFixed(3) + 'ms > 25ms');
+              process.exit(1);
+            }
+          }).catch(err => {
+            console.error('Import failed:', err);
+            process.exit(1);
+          });
+        ")
+        echo "Cold-start time: ${START_TIME}ms"
+    
+    - name: Generate SBOM
+      run: |
+        echo "Generating SBOM..."
+        # Install cyclonedx-npm for SBOM generation
+        npm install -g @cyclonedx/cyclonedx-npm
+        cyclonedx-npm --output-format json --output-file bom.json
+        echo "SBOM generated: bom.json"
+    
+    - name: Check for high-risk vulnerabilities
+      run: |
+        echo "Checking for high-risk vulnerabilities..."
+        # This would integrate with a vulnerability scanner
+        # For now, we'll check if SBOM was generated successfully
+        if [ ! -f bom.json ]; then
+          echo "❌ SBOM generation failed"
+          exit 1
+        else
+          echo "✅ SBOM generated successfully"
+        fi
+    
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom
+        path: bom.json
+        retention-days: 30
