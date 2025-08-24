@@ -10,5 +10,11 @@ export type * from './types/auth';
 export { MCPAuthError, MCP_AUTH_ERROR_CODES } from './lib/auth';
 
 export { createMCPResourceProvider, createMCPResourceTemplateProvider } from './lib/factories/resources';
-export * from './lib/auth';
+// Export core auth functionality (excluding discovery for faster cold start)
+export * from './lib/auth/executor';
+export * from './lib/auth/middleware';
+export * from './lib/auth/errors';
+
+// Export discovery features separately (can be imported on-demand)
+export * from './lib/auth/discovery';
 
