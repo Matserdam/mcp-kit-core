@@ -1,5 +1,6 @@
 import type { ZodTypeAny } from 'zod';
 import type { MCPToolCallResult, MCPResourceReadResult, ResourceUri } from './server';
+import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from './auth';
 
 export type MCPJSONSchema = {
   $id?: string;
@@ -109,7 +110,7 @@ export type MCPResourceTemplateProviderInit<TContext = unknown> = {
   read: (uri: ResourceUri, context: TContext) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
 };
 
-export interface MCPToolkit<TContext = unknown> {
+export interface MCPToolkit<TContext = unknown, TMiddleware = Record<string, unknown>> {
   namespace: string;
   description?: string;
   middleware?: MCPToolkitMiddleware<TContext>;
@@ -118,6 +119,9 @@ export interface MCPToolkit<TContext = unknown> {
   createContext?(init: MCPToolkitInit): Promise<Record<string, unknown>> | Record<string, unknown>;
   resources?: Array<MCPResourceProvider<TContext>>;
   resourceTemplates?: Array<MCPResourceTemplateProvider<TContext>>;
+  
+  // Transport-specific auth middleware
+  auth?: MCPHTTPAuthMiddleware<TMiddleware> | MCPSTDIOAuthMiddleware<TMiddleware>;
 }
 
 

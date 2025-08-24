@@ -2,6 +2,7 @@ import type { MCPRequest, MCPResponse } from '../types/server';
 import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
 import { handleRPC } from './rpc';
 import type { MCPToolkit } from '../types/toolkit';
+import { createAuthContext, defaultAuthMiddlewareManager } from './auth';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -150,6 +151,30 @@ export class StdioController implements MCPStdioController {
 
           try {
             const request = JSON.parse(line) as MCPRequest;
+            
+            // Execute auth middleware if required
+            try {
+              const authContext = await createAuthContext(request, process.env, this.toolkits, defaultAuthMiddlewareManager);
+              if (!authContext.authenticated) {
+                const authErrorResponse: MCPResponse = {
+                  jsonrpc: '2.0',
+                  id: request.id,
+                  error: { code: -32001, message: 'Authentication required' },
+                };
+                void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+                continue;
+              }
+            } catch (error) {
+              // Handle auth errors
+              const authErrorResponse: MCPResponse = {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: { code: -32001, message: error instanceof Error ? error.message : 'Authentication error' },
+              };
+              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+              continue;
+            }
+            
             const response = await handleRPC(request, this.toolkits);
             void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
           } catch {
@@ -167,6 +192,30 @@ export class StdioController implements MCPStdioController {
       if (bufferedText.trim().length > 0) {
         try {
           const request = JSON.parse(bufferedText) as MCPRequest;
+          
+          // Execute auth middleware if required
+          try {
+            const authContext = await createAuthContext(request, process.env, this.toolkits, defaultAuthMiddlewareManager);
+            if (!authContext.authenticated) {
+              const authErrorResponse: MCPResponse = {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: { code: -32001, message: 'Authentication required' },
+              };
+              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+              return;
+            }
+          } catch (error) {
+            // Handle auth errors
+            const authErrorResponse: MCPResponse = {
+              jsonrpc: '2.0',
+              id: request.id,
+              error: { code: -32001, message: error instanceof Error ? error.message : 'Authentication error' },
+            };
+            void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+            return;
+          }
+          
           const response = await handleRPC(request, this.toolkits);
           void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
         } catch {
@@ -175,7 +224,7 @@ export class StdioController implements MCPStdioController {
             id: null,
             error: { code: -32700, message: 'Parse error' },
           };
-                      void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
+          void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
         }
       }
     } catch {

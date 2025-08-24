@@ -5,6 +5,7 @@ import { parseFetchRpc } from '../validations/request.fetch';
 import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
 import { responseSSEOnce } from './response/sse';
+import { defaultAuthMiddlewareManager, createAuthContext } from './auth';
 
 export class MCPServer {
   private readonly options: MCPServerOptions;
@@ -68,8 +69,6 @@ export class MCPServer {
   public readonly fetch = async (request: Request): Promise<Response> => {
     const method = request.method.toUpperCase();
 
-    
-
     const json = (data: unknown, init?: ResponseInit) => responseJson(data, init);
 
     if (method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
@@ -78,7 +77,6 @@ export class MCPServer {
     try {
       rpc = await request.json();
     } catch {
-      
       return json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
     }
     
@@ -94,9 +92,34 @@ export class MCPServer {
     }
     const parsed = parseFetchRpc(rpc);
     if ("error" in parsed) {
-      
       return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
     }
+    
+    // Execute auth middleware if required
+    try {
+      const authContext = await createAuthContext(parsed, null, this.options.toolkits, defaultAuthMiddlewareManager);
+      if (!authContext.authenticated) {
+        return json({ 
+          jsonrpc: '2.0', 
+          id: parsed.id, 
+          error: { code: -32001, message: 'Authentication required' } 
+        }, { status: 401 });
+      }
+    } catch (error) {
+      // Handle auth errors with proper HTTP status codes
+      if (error instanceof Error && 'statusCode' in error) {
+        const statusCode = typeof (error as Error & { statusCode?: number }).statusCode === 'number' 
+          ? (error as Error & { statusCode: number }).statusCode 
+          : 401;
+        return json({ 
+          jsonrpc: '2.0', 
+          id: parsed.id, 
+          error: { code: -32001, message: error.message } 
+        }, { status: statusCode });
+      }
+      throw error;
+    }
+    
     // Notification (no id provided by client payload)
     const isNotification = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && typeof (rpc as Record<string, unknown>).method === 'string' && !('id' in rpc);
     if (isNotification) {
