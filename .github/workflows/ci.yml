@@ -31,10 +31,15 @@ jobs:
       run: |
         echo "📦 Installing dependencies for examples..."
         for example in examples/*/; do
-          if [ -f "$example/package.json" ]; then
-            echo "📁 Installing dependencies in $example"
-            cd "$example" && bun install && cd ../..
+          echo "📁 Installing dependencies in $example"
+          cd "$example"
+          if [ -f "package.json" ]; then
+            echo "  Found package.json, running bun install..."
+            bun install
+          else
+            echo "  No package.json found, skipping..."
           fi
+          cd ../..
         done
     
     - name: Run tests
