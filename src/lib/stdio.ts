@@ -36,7 +36,7 @@ export class StdioController implements MCPStdioController {
   }
 
   /** Start the reader and writer loops. Safe to call multiple times. */
-  start = async (): Promise<void> => {
+  start = (): void => {
     if (this.running) return;
 
     const input = this.options.input ?? process.stdin;
