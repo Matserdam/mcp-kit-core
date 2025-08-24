@@ -12,13 +12,15 @@ import type {
   MCPHTTPAuthMiddleware, 
   MCPSTDIOAuthMiddleware,
   MCPRequest,
-  MCPRequestWithHeaders
+  MCPRequestWithHeaders,
+  MCPResourceUriExtractor
 } from '../src/index';
 import type { MCPToolkit } from '../src/index';
 
 describe('Auth Middleware', () => {
   let mockRequest: MCPRequest;
   let mockEnv: NodeJS.ProcessEnv;
+  let mockResourceUriExtractor: MCPResourceUriExtractor;
 
   beforeEach(() => {
     mockRequest = {
@@ -30,6 +32,10 @@ describe('Auth Middleware', () => {
     mockEnv = {
       MCP_API_KEY: 'test-api-key',
       MCP_USER_ID: 'test-user'
+    };
+
+    mockResourceUriExtractor = {
+      extractUri: vi.fn().mockReturnValue('tool:test.tool')
     };
   });
 
@@ -60,7 +66,7 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'Bearer valid-token' }
       };
 
-      const result = await executeHTTPAuth(request, mockAuth);
+      const result = await executeHTTPAuth(request, mockAuth, mockResourceUriExtractor);
       
       expect(result.middleware).toEqual({ user: 'test-user' });
       expect(result.transport).toBe('http');
@@ -73,7 +79,7 @@ describe('Auth Middleware', () => {
         validateToken: vi.fn()
       };
 
-      await expect(executeHTTPAuth(mockRequest as MCPRequestWithHeaders, mockAuth))
+      await expect(executeHTTPAuth(mockRequest as MCPRequestWithHeaders, mockAuth, mockResourceUriExtractor))
         .rejects
         .toThrow(MCPAuthError);
     });
@@ -89,7 +95,7 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'InvalidFormat token' }
       };
 
-      await expect(executeHTTPAuth(request, mockAuth))
+      await expect(executeHTTPAuth(request, mockAuth, mockResourceUriExtractor))
         .rejects
         .toThrow(MCPAuthError);
     });
@@ -105,7 +111,7 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'Bearer invalid-token' }
       };
 
-      await expect(executeHTTPAuth(request, mockAuth))
+      await expect(executeHTTPAuth(request, mockAuth, mockResourceUriExtractor))
         .rejects
         .toThrow(MCPAuthError);
     });
@@ -114,7 +120,7 @@ describe('Auth Middleware', () => {
       const onAuthError = vi.fn();
       const mockAuth: MCPHTTPAuthMiddleware<{ user: string }> = {
         type: 'http',
-        validateToken: vi.fn().mockResolvedValue(null),
+        validateToken: vi.fn().mockRejectedValue(new Error('Network error')),
         onAuthError
       };
 
@@ -123,7 +129,7 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'Bearer invalid-token' }
       };
 
-      await expect(executeHTTPAuth(request, mockAuth))
+      await expect(executeHTTPAuth(request, mockAuth, mockResourceUriExtractor))
         .rejects
         .toThrow(MCPAuthError);
 
@@ -169,7 +175,7 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'Bearer valid-token' }
       };
 
-      const result = await executeAuth(request, null, mockAuth);
+      const result = await executeAuth(request, mockEnv, mockAuth, mockResourceUriExtractor);
       
       expect(result.middleware).toEqual({ user: 'test-user' });
       expect(result.transport).toBe('http');
@@ -181,19 +187,19 @@ describe('Auth Middleware', () => {
         extractCredentials: vi.fn().mockResolvedValue({ user: 'test-user' })
       };
 
-      const result = await executeAuth(null, mockEnv, mockAuth);
+      const result = await executeAuth(null, mockEnv, mockAuth, mockResourceUriExtractor);
       
       expect(result.middleware).toEqual({ user: 'test-user' });
       expect(result.transport).toBe('stdio');
     });
 
     it('should throw error for invalid auth type', async () => {
-      const invalidAuth = {
-        type: 'invalid' as 'http',
+      const mockAuth = {
+        type: 'invalid',
         validateToken: vi.fn()
-      };
+      } as unknown as MCPHTTPAuthMiddleware<unknown> | MCPSTDIOAuthMiddleware<unknown>;
 
-      await expect(executeAuth(mockRequest as MCPRequestWithHeaders, null, invalidAuth))
+      await expect(executeAuth(mockRequest as MCPRequestWithHeaders, mockEnv, mockAuth, mockResourceUriExtractor))
         .rejects
         .toThrow(MCPAuthError);
     });
@@ -246,7 +252,7 @@ describe('Auth Middleware', () => {
         validateToken: vi.fn().mockResolvedValue({ user: 'test-user' })
       };
 
-      const toolkit: MCPToolkit = {
+      const toolkit: MCPToolkit<unknown, { user: string }> = {
         namespace: 'test',
         auth: mockAuth
       };
@@ -256,57 +262,54 @@ describe('Auth Middleware', () => {
         headers: { authorization: 'Bearer valid-token' }
       };
 
-      const result = await authManager.executeToolkitAuth(toolkit, request, null);
+      const result = await authManager.executeToolkitAuth(toolkit, request, mockEnv);
       
-      expect(result).toEqual({
-        middleware: { user: 'test-user' },
-        transport: 'http'
-      });
+      expect(result).not.toBeNull();
+      expect(result!.middleware).toEqual({ user: 'test-user' });
+      expect(result!.transport).toBe('http');
     });
 
     it('should return null when toolkit has no auth middleware', async () => {
-      const toolkit: MCPToolkit = {
+      const toolkit: MCPToolkit<unknown, unknown> = {
         namespace: 'test'
+        // No auth middleware
       };
 
-      const result = await authManager.executeToolkitAuth(toolkit, mockRequest, null);
+      const result = await authManager.executeToolkitAuth(toolkit, mockRequest, mockEnv);
       
       expect(result).toBeNull();
     });
 
     it('should check if toolkits require auth', () => {
-      const toolkitWithAuth: MCPToolkit = {
-        namespace: 'test',
+      const toolkit1: MCPToolkit<unknown, unknown> = { namespace: 'test1' };
+      const toolkit2: MCPToolkit<unknown, unknown> = { 
+        namespace: 'test2',
         auth: {
           type: 'http',
           validateToken: vi.fn()
-        }
+        } as MCPHTTPAuthMiddleware<unknown>
       };
 
-      const toolkitWithoutAuth: MCPToolkit = {
-        namespace: 'test2'
-      };
-
-      expect(authManager.requiresAuth([toolkitWithAuth])).toBe(true);
-      expect(authManager.requiresAuth([toolkitWithoutAuth])).toBe(false);
-      expect(authManager.requiresAuth([toolkitWithAuth, toolkitWithoutAuth])).toBe(true);
+      expect(authManager.requiresAuth([toolkit1])).toBe(false);
+      expect(authManager.requiresAuth([toolkit2])).toBe(true);
+      expect(authManager.requiresAuth([toolkit1, toolkit2])).toBe(true);
     });
 
     it('should validate auth configuration', () => {
-      const validToolkit: MCPToolkit = {
-        namespace: 'test',
+      const validToolkit: MCPToolkit<unknown, unknown> = {
+        namespace: 'test1',
         auth: {
           type: 'http',
           validateToken: vi.fn()
-        }
+        } as MCPHTTPAuthMiddleware<unknown>
       };
 
-      const invalidToolkit: MCPToolkit = {
+      const invalidToolkit: MCPToolkit<unknown, unknown> = {
         namespace: 'test2',
         auth: {
-          type: 'http'
+          type: 'http',
           // Missing validateToken
-        } as MCPHTTPAuthMiddleware<Record<string, unknown>>
+        } as unknown as MCPHTTPAuthMiddleware<unknown>
       };
 
       const result = authManager.validateAuthConfiguration([validToolkit, invalidToolkit]);
@@ -318,11 +321,12 @@ describe('Auth Middleware', () => {
 
   describe('Auth Context Creation', () => {
     it('should create auth context when no auth is required', async () => {
-      const toolkit: MCPToolkit = {
-        namespace: 'test'
-      };
+      const toolkits: MCPToolkit<unknown, unknown>[] = [
+        { namespace: 'test1' },
+        { namespace: 'test2' }
+      ];
 
-      const context = await createAuthContext(mockRequest, null, [toolkit]);
+      const context = await createAuthContext(mockRequest, mockEnv, toolkits);
       
       expect(context.authenticated).toBe(true);
       expect(context.middleware).toBeNull();
@@ -335,17 +339,19 @@ describe('Auth Middleware', () => {
         validateToken: vi.fn().mockResolvedValue({ user: 'test-user' })
       };
 
-      const toolkit: MCPToolkit = {
-        namespace: 'test',
-        auth: mockAuth
-      };
+      const toolkits: MCPToolkit<unknown, { user: string }>[] = [
+        {
+          namespace: 'test',
+          auth: mockAuth
+        }
+      ];
 
       const request: MCPRequestWithHeaders = {
         ...mockRequest,
         headers: { authorization: 'Bearer valid-token' }
       };
 
-      const context = await createAuthContext(request, null, [toolkit]);
+      const context = await createAuthContext(request, mockEnv, toolkits);
       
       expect(context.authenticated).toBe(true);
       expect(context.middleware).toEqual({ user: 'test-user' });
@@ -358,17 +364,19 @@ describe('Auth Middleware', () => {
         validateToken: vi.fn().mockResolvedValue(null)
       };
 
-      const toolkit: MCPToolkit = {
-        namespace: 'test',
-        auth: mockAuth
-      };
+      const toolkits: MCPToolkit<unknown, { user: string }>[] = [
+        {
+          namespace: 'test',
+          auth: mockAuth
+        }
+      ];
 
       const request: MCPRequestWithHeaders = {
         ...mockRequest,
         headers: { authorization: 'Bearer invalid-token' }
       };
 
-      const context = await createAuthContext(request, null, [toolkit]);
+      const context = await createAuthContext(request, mockEnv, toolkits);
       
       expect(context.authenticated).toBe(false);
       expect(context.middleware).toBeNull();

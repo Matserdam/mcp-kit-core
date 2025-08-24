@@ -1,18 +1,75 @@
-import type { MCPResponse, MCPResourceReadParams, MCPResourceReadResult } from '../../../types/server';
+import type { MCPResponse, MCPResourceReadParams, MCPResourceReadResult, MCPRequest } from '../../../types/server';
 import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../types/toolkit';
 import type { ResourceUri } from '../../../types/server';
+import type { MCPRPCContext } from '../../rpc';
+import type { MCPRequestWithHeaders } from '../../../types/auth';
+import { defaultAuthMiddlewareManager } from '../../auth/middleware';
+import { MCPAuthError } from '../../auth/errors';
 import { uriMatchesTemplate } from './util';
 
-const createContext = async (toolkit: MCPToolkit<unknown>, contextInit: { requestId?: string | number | null }): Promise<Record<string, unknown>> => {
+// Helper function to convert HTTP request to MCPRequestWithHeaders
+function createMCPRequestWithHeaders(
+  mcpRequest: MCPRequest, 
+  httpRequest?: Request
+): MCPRequestWithHeaders | null {
+  if (!httpRequest) {
+    return null;
+  }
+
+  // Extract headers from HTTP request
+  const headers: Record<string, string> = {};
+  httpRequest.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
+  });
+
+  return {
+    ...mcpRequest,
+    headers
+  };
+}
+
+const createContext = async (toolkit: MCPToolkit<unknown, unknown>, contextInit: { requestId?: string | number | null }): Promise<Record<string, unknown>> => {
   const contextResult = toolkit.createContext?.(contextInit) ?? {};
   return contextResult instanceof Promise ? await contextResult : contextResult;
 };
 
+// Helper function to authenticate toolkit
+async function authenticateToolkit(
+  toolkit: MCPToolkit<unknown, unknown>,
+  id: string | number | null,
+  params: MCPResourceReadParams,
+  rpcContext?: MCPRPCContext
+): Promise<void> {
+  if (toolkit.auth) {
+    try {
+      const mcpRequestWithHeaders = createMCPRequestWithHeaders(
+        { id, method: 'resources/read', params } as MCPRequest,
+        rpcContext?.httpRequest
+      );
+      
+      const authResult = await defaultAuthMiddlewareManager.executeToolkitAuth(
+        toolkit, 
+        mcpRequestWithHeaders, 
+        rpcContext?.env || null
+      );
+      if (!authResult) {
+        throw new MCPAuthError('Authentication required', 401);
+      }
+    } catch (error) {
+      if (error instanceof MCPAuthError) {
+        throw error;
+      }
+      throw new MCPAuthError('Authentication failed', 401);
+    }
+  }
+}
+
 export const handleResourcesRead = async (
   id: string | number | null,
   params: MCPResourceReadParams,
-  toolkits: MCPToolkit[],
-  contextInit: { requestId?: string | number | null }
+  toolkits: MCPToolkit<unknown, unknown>[],
+  contextInit: { requestId?: string | number | null },
+  rpcContext?: MCPRPCContext
 ): Promise<MCPResponse> => {
   const uri: string | undefined = (params as { uri?: string }).uri;
   if (!uri) {
@@ -23,7 +80,21 @@ export const handleResourcesRead = async (
   const provider: MCPResourceProvider<unknown> | undefined = providers.find((p) => p.uri === uri);
   if (provider) {
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
-    const context = await createContext(tk!, contextInit);
+    if (!tk) {
+      return { jsonrpc: '2.0', id, error: { code: -32002, message: 'Resource provider not found' } };
+    }
+    
+    // Authenticate the toolkit that provides this resource
+    try {
+      await authenticateToolkit(tk, id, params, rpcContext);
+    } catch (error) {
+      if (error instanceof MCPAuthError) {
+        return { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } };
+      }
+      throw error;
+    }
+    
+    const context = await createContext(tk, contextInit);
     const resultPromise = provider.read(context);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
     return { jsonrpc: '2.0', id, result };
@@ -34,7 +105,21 @@ export const handleResourcesRead = async (
     const { ok, params: pathParams } = uriMatchesTemplate(uri, tpl.descriptor.uriTemplate);
     if (!ok) continue;
     const tk = toolkits.find((t) => (t.resourceTemplates ?? []).includes(tpl));
-    const context = await createContext(tk!, contextInit);
+    if (!tk) {
+      continue;
+    }
+    
+    // Authenticate the toolkit that provides this resource template
+    try {
+      await authenticateToolkit(tk, id, params, rpcContext);
+    } catch (error) {
+      if (error instanceof MCPAuthError) {
+        return { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } };
+      }
+      throw error;
+    }
+    
+    const context = await createContext(tk, contextInit);
     const mergedContext = Object.assign({}, context, { params: pathParams });
     const resultPromise = tpl.read(uri as ResourceUri, mergedContext);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;

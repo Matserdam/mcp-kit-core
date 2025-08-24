@@ -3,7 +3,7 @@ import { handleRPC } from '../src/lib/rpc';
 import type { MCPRequest } from '../src/types/server';
 import type { MCPToolkit as TK, MCPResourceProvider, MCPResourceTemplateProvider } from '../src/types/toolkit';
 
-const makeToolkit = (init: Partial<TK>): TK => ({ namespace: 'ns', tools: [], ...init });
+const makeToolkit = (init: Partial<TK<unknown, unknown>>): TK<unknown, unknown> => ({ namespace: 'ns', tools: [], ...init });
 
 describe('Canonical tools: search and fetch', () => {
   it('tools/list includes canonical search and fetch', async () => {
@@ -16,7 +16,7 @@ describe('Canonical tools: search and fetch', () => {
   });
 
   it('search returns text and resource_link items, filters by query/site/topK', async () => {
-    const providers: MCPResourceProvider[] = [
+    const providers: MCPResourceProvider<unknown>[] = [
       {
         uri: 'https://example.com/a/pikachu',
         name: 'pikachu-a',
@@ -28,7 +28,7 @@ describe('Canonical tools: search and fetch', () => {
         read: () => ({ contents: [{ uri: 'https://raw.githubusercontent.com/img/pikachu.png' }] }),
       },
     ];
-    const templates: MCPResourceTemplateProvider[] = [
+    const templates: MCPResourceTemplateProvider<unknown>[] = [
       {
         descriptor: { 
           uriTemplate: 'https://cdn.example.com/{name}.png', 
@@ -52,7 +52,7 @@ describe('Canonical tools: search and fetch', () => {
 
   it('fetch resolves via provider to resource', async () => {
     const target = 'https://assets.example.com/pikachu.txt';
-    const providers: MCPResourceProvider[] = [
+    const providers: MCPResourceProvider<unknown>[] = [
       { uri: target, name: 'pikachu-text', read: () => ({ contents: [{ uri: target, name: 'pikachu-text', mimeType: 'text/plain', text: 'PIKACHU' }] }) },
     ];
     const req = { id: 2, method: 'tools/call', params: { name: 'fetch', arguments: { id: 'pikachu', uri: target } } } as MCPRequest;
@@ -65,7 +65,7 @@ describe('Canonical tools: search and fetch', () => {
 
   it('fetch resolves via template to resource', async () => {
     const target = 'https://cdn.example.com/pikachu.png';
-    const templates: MCPResourceTemplateProvider[] = [
+    const templates: MCPResourceTemplateProvider<unknown>[] = [
       {
         descriptor: { 
           uriTemplate: 'https://cdn.example.com/{name}.png', 

@@ -27,7 +27,7 @@ export class StdioController implements MCPStdioController {
    * @param options Stdio runtime options (input/output streams, framing)
    */
   constructor(
-    private readonly toolkits: MCPToolkit[],
+    private readonly toolkits: MCPToolkit<unknown, unknown>[],
     private readonly options: MCPStdioOptions = {}
   ) { }
 

@@ -5,7 +5,6 @@ import { parseFetchRpc } from '../validations/request.fetch';
 import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
 import { responseSSEOnce } from './response/sse';
-import { defaultAuthMiddlewareManager, createAuthContext } from './auth';
 import { MCPDiscoveryHandler, createDiscoveryResponse, createDiscoveryError } from './auth/discovery';
 
 export class MCPServer {
@@ -155,66 +154,6 @@ export class MCPServer {
       return json({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
     }
     
-    // Execute auth middleware if required
-    try {
-      const authContext = await createAuthContext(parsed, null, this.options.toolkits, defaultAuthMiddlewareManager);
-      if (!authContext.authenticated) {
-        // Enhanced error response with discovery information
-        if (this.discoveryHandler) {
-          const errorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
-            parsed.id,
-            request.url,
-            'invalid_token',
-            'Authentication required'
-          );
-          
-          return json(errorResponse, { 
-            status: 401,
-            headers: {
-              'WWW-Authenticate': this.discoveryHandler.createWWWAuthenticateHeader(request.url)
-            }
-          });
-        } else {
-          return json({ 
-            jsonrpc: '2.0', 
-            id: parsed.id, 
-            error: { code: -32001, message: 'Authentication required' } 
-          }, { status: 401 });
-        }
-      }
-    } catch (error) {
-      // Handle auth errors with proper HTTP status codes
-      if (error instanceof Error && 'statusCode' in error) {
-        const statusCode = typeof (error as Error & { statusCode?: number }).statusCode === 'number' 
-          ? (error as Error & { statusCode: number }).statusCode 
-          : 401;
-        
-        // Enhanced error response with discovery information
-        if (this.discoveryHandler) {
-          const errorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
-            parsed.id,
-            request.url,
-            'invalid_token',
-            error.message
-          );
-          
-          return json(errorResponse, { 
-            status: statusCode,
-            headers: {
-              'WWW-Authenticate': this.discoveryHandler.createWWWAuthenticateHeader(request.url)
-            }
-          });
-        } else {
-          return json({ 
-            jsonrpc: '2.0', 
-            id: parsed.id, 
-            error: { code: -32001, message: error.message } 
-          }, { status: statusCode });
-        }
-      }
-      throw error;
-    }
-    
     // Notification (no id provided by client payload)
     const isNotification = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && typeof (rpc as Record<string, unknown>).method === 'string' && !('id' in rpc);
     if (isNotification) {
@@ -222,7 +161,7 @@ export class MCPServer {
       return new Response(null, { status: 202 });
     }
 
-    const response = await handleRPC(parsed, this.options.toolkits);
+    const response = await handleRPC(parsed, this.options.toolkits, { httpRequest: request });
     if (wantsEventStream && !wantsJson) {
       return responseSSEOnce(response);
     }

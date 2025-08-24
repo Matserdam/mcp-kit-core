@@ -49,7 +49,7 @@ export type MCPToolRunner<TContext = unknown> = (
 
 export type MCPToolMiddleware<TContext = unknown> = (
   next: MCPToolRunner<TContext>,
-  info: { toolkit: MCPToolkit<TContext>; tool: MCPTool<TContext, unknown> }
+  info: { toolkit: MCPToolkit<TContext, unknown>; tool: MCPTool<TContext, unknown> }
 ) => MCPToolRunner<TContext>;
 
 export interface MCPToolkitMiddleware<TContext = unknown> {
@@ -110,10 +110,9 @@ export type MCPResourceTemplateProviderInit<TContext = unknown> = {
   read: (uri: ResourceUri, context: TContext) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
 };
 
-export interface MCPToolkit<TContext = unknown, TMiddleware = Record<string, unknown>> {
+export interface MCPToolkit<TContext, TAuth> {
   namespace: string;
   description?: string;
-  middleware?: MCPToolkitMiddleware<TContext>;
   tools?: Array<MCPTool<TContext, unknown>>;
   prompts?: Array<MCPPromptDef>;
   createContext?(init: MCPToolkitInit): Promise<Record<string, unknown>> | Record<string, unknown>;
@@ -121,7 +120,7 @@ export interface MCPToolkit<TContext = unknown, TMiddleware = Record<string, unk
   resourceTemplates?: Array<MCPResourceTemplateProvider<TContext>>;
   
   // Transport-specific auth middleware
-  auth?: MCPHTTPAuthMiddleware<TMiddleware> | MCPSTDIOAuthMiddleware<TMiddleware>;
+  auth?: MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth>;
 }
 
 

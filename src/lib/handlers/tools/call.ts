@@ -1,5 +1,6 @@
 import type { MCPRequest, MCPResponse, MCPToolsCallParams } from '../../../types/server';
 import type { MCPToolkit } from '../../../types/toolkit';
+import type { MCPRPCContext } from '../../rpc';
 import { runToolkitTool } from './runners/toolkit';
 import { runSearch } from './runners/search';
 import { runFetch } from './runners/fetch';
@@ -7,7 +8,8 @@ import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas
 
 export const handleToolCall = async (
   request: MCPRequest,
-  toolkits: MCPToolkit[]
+  toolkits: MCPToolkit<unknown, unknown>[],
+  context?: MCPRPCContext
 ): Promise<MCPResponse> => {
   const { id, params } = request;
 
@@ -28,15 +30,15 @@ export const handleToolCall = async (
         const v = canonicalSearchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
         if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
       }
-      return runSearch(id, params as MCPToolsCallParams, toolkits);
+      return runSearch(id, params as MCPToolsCallParams, toolkits, context);
     case 'fetch':
       {
         const v = canonicalFetchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
         if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
       }
-      return runFetch(id, params as MCPToolsCallParams, toolkits);
+      return runFetch(id, params as MCPToolsCallParams, toolkits, context);
     default:
-      return runToolkitTool(id, params as MCPToolsCallParams, toolkits);
+      return runToolkitTool(id, params as MCPToolsCallParams, toolkits, context);
   }
 };
 

@@ -4,7 +4,7 @@ import type { MCPRequest, MCPToolkit, MCPTool, MCPResponse } from '../src/index'
 import { z } from 'zod';
 
 describe('handleRPC', () => {
-  const makeToolkit = (tools: MCPTool[]): MCPToolkit => ({ namespace: 'ns', tools });
+  const makeToolkit = (tools: MCPTool<unknown, unknown>[]): MCPToolkit<unknown, unknown> => ({ namespace: 'ns', tools });
 
   it('returns initialize payload', async () => {
     const req: MCPRequest = { id: 1, method: 'initialize', params: {} };
@@ -23,7 +23,7 @@ describe('handleRPC', () => {
   });
 
   it('lists tools with schemas', async () => {
-    const tool: MCPTool = {
+    const tool: MCPTool<unknown, unknown> = {
       name: 't',
       description: 'test',
       input: { zod: z.object({ a: z.string() }) },
@@ -40,10 +40,10 @@ describe('handleRPC', () => {
   });
 
   it('calls a tool and returns MCPToolCallResult', async () => {
-    const tool: MCPTool = {
+    const tool: MCPTool<unknown, unknown> = {
       name: 'sum',
       run: (args: Record<string, unknown>) => ({ content: [{ type: 'text', text: String((args?.a as number ?? 0) + (args?.b as number ?? 0)) }] }),
-    } as MCPTool;
+    } as MCPTool<unknown, unknown>;
     const req: MCPRequest = { id: 2, method: 'tools/call', params: { name: 'ns_sum', arguments: { a: 1, b: 2 } } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
     const response = res as { result: { content: Array<{ text: string }> } };
@@ -63,11 +63,11 @@ describe('handleRPC', () => {
   });
 
   it('validates zod and errors on invalid args', async () => {
-    const tool: MCPTool = {
+    const tool: MCPTool<unknown, unknown> = {
       name: 'needsA',
       input: { zod: z.object({ a: z.string() }) },
       run: () => ({ content: [{ type: 'text', text: 'ok' }] }),
-    } as MCPTool;
+    } as MCPTool<unknown, unknown>;
     const req: MCPRequest = { id: 5, method: 'tools/call', params: { name: 'ns_needsA', arguments: { a: 1 } } } as MCPRequest;
     const res = await handleRPC(req, [makeToolkit([tool])]);
     expect(res.error?.code).toBe(-32602);

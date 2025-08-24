@@ -2,7 +2,7 @@ import { MCPJSONSchema, MCPToolkit } from "./toolkit";
 import type { MCPDiscoveryConfig } from "./auth";
 
 export interface MCPServerOptions {
-  toolkits: Array<MCPToolkit>;
+  toolkits: Array<MCPToolkit<unknown, unknown>>;
   logger?: Logger;
   config?: Partial<Config>;
   discovery?: MCPDiscoveryConfig;

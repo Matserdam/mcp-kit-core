@@ -22,7 +22,7 @@ const getStructuredContent = (result: { result?: unknown }) => {
 };
 
 // Mock toolkits for testing
-const createMockToolkit = (overrides: Partial<MCPToolkit> = {}): MCPToolkit => ({
+const createMockToolkit = (overrides: Partial<MCPToolkit<unknown, unknown>> = {}): MCPToolkit<unknown, unknown> => ({
   namespace: 'test',
   ...overrides
 });
@@ -57,36 +57,36 @@ const createMockResource = (uri: string, name: string, title?: string, descripti
 
 describe('Mutation Tests - Search Runner', () => {
   describe('Input Validation Edge Cases', () => {
-    it('should handle missing query parameter', () => {
+    it('should handle missing query parameter', async () => {
       const params: MCPToolsCallParams = { name: 'search', arguments: {} };
-      const result = runSearch('test-id', params, []);
+      const result = await runSearch('test-id', params, []);
       expect(result.error?.code).toBe(-32602);
       expect(result.error?.message).toContain('expected { query: string }');
     });
 
-    it('should handle empty string query', () => {
+    it('should handle empty string query', async () => {
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: '' } };
-      const result = runSearch('test-id', params, []);
+      const result = await runSearch('test-id', params, []);
       expect(result.error?.code).toBe(-32602);
       expect(result.error?.message).toContain('expected { query: string }');
     });
 
-    it('should handle non-string query', () => {
+    it('should handle non-string query', async () => {
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 123 } };
-      const result = runSearch('test-id', params, []);
+      const result = await runSearch('test-id', params, []);
       expect(result.error?.code).toBe(-32602);
       expect(result.error?.message).toContain('expected { query: string }');
     });
   });
 
   describe('topK Parameter Edge Cases', () => {
-    it('should handle negative topK', () => {
+    it('should handle negative topK', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('test://resource1', 'Test Resource 1')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test', topK: -5 } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       const toolCallResult = result.result as MCPToolCallResult;
       expect(toolCallResult).toBeDefined();
@@ -94,48 +94,48 @@ describe('Mutation Tests - Search Runner', () => {
       expect(toolCallResult.structuredContent?.results).toHaveLength(1);
     });
 
-    it('should handle zero topK', () => {
+    it('should handle zero topK', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('test://resource1', 'Test Resource 1')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test', topK: 0 } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       expect(getStructuredContent(result)?.results).toHaveLength(1);
     });
 
-    it('should handle fractional topK', () => {
+    it('should handle fractional topK', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('test://resource1', 'Test Resource 1')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test', topK: 3.7 } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       expect(getStructuredContent(result)?.results).toHaveLength(1);
     });
   });
 
   describe('Site Parameter Edge Cases', () => {
-    it('should handle empty site string', () => {
+    it('should handle empty site string', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('https://example.com/resource', 'Test Resource')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test', site: '' } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       expect(getStructuredContent(result)?.results).toHaveLength(1);
     });
 
-    it('should handle non-string site', () => {
+    it('should handle non-string site', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('https://example.com/resource', 'Test Resource')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test', site: 123 } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       const toolCallResult = result.result as MCPToolCallResult;
       expect(toolCallResult).toBeDefined();
@@ -145,13 +145,13 @@ describe('Mutation Tests - Search Runner', () => {
   });
 
   describe('URL Parsing Edge Cases', () => {
-    it('should handle invalid URLs gracefully', () => {
+    it('should handle invalid URLs gracefully', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('invalid://url', 'Test Resource')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test' } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       
       // Invalid URLs are handled gracefully - the resource should still be found
       expect(getStructuredContent(result)?.results).toHaveLength(1);
@@ -159,9 +159,9 @@ describe('Mutation Tests - Search Runner', () => {
   });
 
   describe('Empty Toolkit Edge Cases', () => {
-    it('should handle empty toolkits array', () => {
+    it('should handle empty toolkits array', async () => {
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test' } };
-      const result = runSearch('test-id', params, []);
+      const result = await runSearch('test-id', params, []);
       const toolCallResult = result.result as MCPToolCallResult;
       expect(toolCallResult).toBeDefined();
       expect(toolCallResult.structuredContent).toBeDefined();
@@ -169,10 +169,10 @@ describe('Mutation Tests - Search Runner', () => {
       expect(toolCallResult.structuredContent?.templates).toHaveLength(0);
     });
 
-    it('should handle toolkit with no resources or templates', () => {
+    it('should handle toolkit with no resources or templates', async () => {
       const toolkit = createMockToolkit();
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'test' } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       const toolCallResult = result.result as MCPToolCallResult;
       expect(toolCallResult).toBeDefined();
       expect(toolCallResult.structuredContent).toBeDefined();
@@ -182,13 +182,13 @@ describe('Mutation Tests - Search Runner', () => {
   });
 
   describe('Case Sensitivity Edge Cases', () => {
-    it('should handle case-insensitive search', () => {
+    it('should handle case-insensitive search', async () => {
       const toolkit = createMockToolkit({
         resources: [createMockResource('test://resource', 'UPPERCASE RESOURCE')]
       });
       
       const params: MCPToolsCallParams = { name: 'search', arguments: { query: 'uppercase' } };
-      const result = runSearch('test-id', params, [toolkit]);
+      const result = await runSearch('test-id', params, [toolkit]);
       const toolCallResult = result.result as MCPToolCallResult;
       expect(toolCallResult).toBeDefined();
       expect(toolCallResult.structuredContent).toBeDefined();

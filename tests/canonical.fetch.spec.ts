@@ -4,7 +4,7 @@ import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } fro
 import type { MCPRequest, MCPResponse, ResourceUri } from '../src/types/server';
 
 describe('canonical fetch resolves via providers/templates (async)', () => {
-  const makeToolkit = (partial: Partial<MCPToolkit>): MCPToolkit => ({ namespace: 'ns', ...partial } as MCPToolkit);
+  const makeToolkit = (partial: Partial<MCPToolkit<unknown, unknown>>): MCPToolkit<unknown, unknown> => ({ namespace: 'ns', ...partial } as MCPToolkit<unknown, unknown>);
 
   it('resolves via async resource provider', async () => {
     const tk = makeToolkit({

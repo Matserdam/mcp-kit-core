@@ -50,16 +50,16 @@ export class MCPAuthMiddlewareManager {
   }
 
   // Execute auth for a specific toolkit
-  async executeToolkitAuth<TMiddleware>(
-    toolkit: MCPToolkit<unknown, TMiddleware>,
+  async executeToolkitAuth<TAuth>(
+    toolkit: MCPToolkit<unknown, TAuth>,
     request: MCPRequest | null,
     env: NodeJS.ProcessEnv | null
-  ): Promise<MCPAuthResult<TMiddleware> | null> {
+  ): Promise<MCPAuthResult<TAuth> | null> {
     if (!toolkit.auth) {
       return null; // No auth required
     }
 
-    if (!validateAuthMiddleware<TMiddleware>(toolkit.auth)) {
+    if (!validateAuthMiddleware<TAuth>(toolkit.auth)) {
       throw new MCPAuthError('Invalid auth middleware configuration', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
     }
 
@@ -68,10 +68,10 @@ export class MCPAuthMiddlewareManager {
 
   // Execute auth for multiple toolkits and return the first valid result
   async executeToolkitsAuth(
-    toolkits: MCPToolkit[],
+    toolkits: MCPToolkit<unknown, unknown>[],
     request: MCPRequest | null,
     env: NodeJS.ProcessEnv | null
-  ): Promise<MCPAuthResult<Record<string, unknown>> | null> {
+  ): Promise<MCPAuthResult<unknown> | null> {
     for (const toolkit of toolkits) {
       try {
         const result = await this.executeToolkitAuth(toolkit, request, env);
@@ -91,15 +91,15 @@ export class MCPAuthMiddlewareManager {
   }
 
   // Check if any toolkit requires auth
-  requiresAuth(toolkits: MCPToolkit[]): boolean {
+  requiresAuth(toolkits: MCPToolkit<unknown, unknown>[]): boolean {
     return toolkits.some(toolkit => 'auth' in toolkit && toolkit.auth !== undefined);
   }
 
   // Get auth middleware for a specific toolkit
-  getAuthMiddleware<TMiddleware>(
-    toolkit: MCPToolkit<unknown, TMiddleware>
-  ): MCPHTTPAuthMiddleware<TMiddleware> | MCPSTDIOAuthMiddleware<TMiddleware> | null {
-    if (!toolkit.auth || !validateAuthMiddleware<TMiddleware>(toolkit.auth)) {
+  getAuthMiddleware<TAuth>(
+    toolkit: MCPToolkit<unknown, TAuth>
+  ): MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth> | null {
+    if (!toolkit.auth || !validateAuthMiddleware<TAuth>(toolkit.auth)) {
       return null;
     }
 
@@ -107,7 +107,7 @@ export class MCPAuthMiddlewareManager {
   }
 
   // Validate auth configuration across all toolkits
-  validateAuthConfiguration(toolkits: MCPToolkit[]): { valid: boolean; errors: string[] } {
+  validateAuthConfiguration(toolkits: MCPToolkit<unknown, unknown>[]): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     for (const toolkit of toolkits) {
@@ -132,8 +132,8 @@ export class MCPAuthMiddlewareManager {
 export const defaultAuthMiddlewareManager = new MCPAuthMiddlewareManager();
 
 // Auth context for request processing
-export interface MCPAuthContext<TMiddleware = Record<string, unknown>> {
-  middleware: TMiddleware | null;
+export interface MCPAuthContext<TAuth> {
+  middleware: TAuth | null;
   transport: 'http' | 'stdio' | null;
   toolkit: string | null;
   authenticated: boolean;
@@ -143,9 +143,9 @@ export interface MCPAuthContext<TMiddleware = Record<string, unknown>> {
 export async function createAuthContext(
   request: MCPRequest | null,
   env: NodeJS.ProcessEnv | null,
-  toolkits: MCPToolkit[],
+  toolkits: MCPToolkit<unknown, unknown>[],
   authManager: MCPAuthMiddlewareManager = defaultAuthMiddlewareManager
-): Promise<MCPAuthContext> {
+): Promise<MCPAuthContext<unknown>> {
   if (!authManager.requiresAuth(toolkits)) {
     return {
       middleware: null,

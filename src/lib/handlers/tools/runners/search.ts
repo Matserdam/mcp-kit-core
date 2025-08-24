@@ -1,11 +1,64 @@
-import type { MCPResponse, MCPToolsCallParams, MCPToolCallResult } from '../../../../types/server';
-import type { MCPToolkit } from '../../../../types/toolkit';
+import type { MCPResponse, MCPToolsCallParams, MCPToolCallResult, MCPRequest } from '../../../../types/server';
+import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../../types/toolkit';
+import type { MCPRPCContext } from '../../../../lib/rpc';
+import type { MCPRequestWithHeaders } from '../../../../types/auth';
+import { defaultAuthMiddlewareManager } from '../../../../lib/auth/middleware';
 
-export const runSearch = (
+// Helper function to convert HTTP request to MCPRequestWithHeaders
+function createMCPRequestWithHeaders(
+  mcpRequest: MCPRequest, 
+  httpRequest?: Request
+): MCPRequestWithHeaders | null {
+  if (!httpRequest) {
+    return null;
+  }
+
+  // Extract headers from HTTP request
+  const headers: Record<string, string> = {};
+  httpRequest.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
+  });
+
+  return {
+    ...mcpRequest,
+    headers
+  };
+}
+
+// Helper function to check if toolkit is accessible (auth passes or no auth required)
+async function isToolkitAccessible(
+  toolkit: MCPToolkit<unknown, unknown>,
+  id: string | number | null,
+  rpcContext?: MCPRPCContext
+): Promise<boolean> {
+  if (!toolkit.auth) {
+    return true; // No auth required
+  }
+
+  try {
+    const mcpRequestWithHeaders = createMCPRequestWithHeaders(
+      { id, method: 'tools/call', params: { name: 'search' } } as MCPRequest,
+      rpcContext?.httpRequest
+    );
+    
+    const authResult = await defaultAuthMiddlewareManager.executeToolkitAuth(
+      toolkit, 
+      mcpRequestWithHeaders, 
+      rpcContext?.env || null
+    );
+    return authResult !== null;
+  } catch (error) {
+    // Auth failed, exclude this toolkit
+    return false;
+  }
+}
+
+export const runSearch = async (
   id: string | number | null,
   params: MCPToolsCallParams,
-  toolkits: MCPToolkit[]
-): MCPResponse => {
+  toolkits: MCPToolkit<unknown, unknown>[],
+  rpcContext?: MCPRPCContext
+): Promise<MCPResponse> => {
   const args: unknown = params.arguments ?? {};
   const argsObj = (typeof args === 'object' && args !== null) ? args as Record<string, unknown> : {};
   const queryUnknown = argsObj.query;
@@ -20,26 +73,53 @@ export const runSearch = (
   const queryLower = queryUnknown.toLowerCase();
   const siteLower = site?.toLowerCase();
 
-  const resources = toolkits.flatMap((tk: MCPToolkit) => (
-    (tk.resources ?? []).map((provider) => ({
-      uri: provider.uri,
-      name: provider.name,
-      title: provider.title,
-      description: provider.description,
-      mimeType: provider.mimeType,
-      size: provider.size,
-    }))
-  ));
+  const resources: Array<{
+    uri: string;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+    size?: number;
+  }> = [];
 
-  const templates = toolkits.flatMap((tk: MCPToolkit) => (
-    (tk.resourceTemplates ?? []).map((tpl) => ({
-      uriTemplate: tpl.descriptor.uriTemplate,
-      name: tpl.descriptor.name,
-      title: tpl.descriptor.title,
-      description: tpl.descriptor.description,
-      mimeType: tpl.descriptor.mimeType,
-    }))
-  ));
+  const templates: Array<{
+    uriTemplate: string;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+  }> = [];
+
+  // Check each toolkit's accessibility and collect resources/templates from accessible ones
+  for (const toolkit of toolkits) {
+    const isAccessible = await isToolkitAccessible(toolkit, id, rpcContext);
+    if (isAccessible) {
+      // Add resources from this toolkit
+      if (toolkit.resources) {
+        const toolkitResources = toolkit.resources.map((provider: MCPResourceProvider<unknown>) => ({
+          uri: provider.uri,
+          name: provider.name,
+          title: provider.title,
+          description: provider.description,
+          mimeType: provider.mimeType,
+          size: provider.size,
+        }));
+        resources.push(...toolkitResources);
+      }
+
+      // Add resource templates from this toolkit
+      if (toolkit.resourceTemplates) {
+        const toolkitTemplates = toolkit.resourceTemplates.map((tpl: MCPResourceTemplateProvider<unknown>) => ({
+          uriTemplate: tpl.descriptor.uriTemplate,
+          name: tpl.descriptor.name,
+          title: tpl.descriptor.title,
+          description: tpl.descriptor.description,
+          mimeType: tpl.descriptor.mimeType,
+        }));
+        templates.push(...toolkitTemplates);
+      }
+    }
+  }
 
   const textMatches = (text?: string) => text ? text.toLowerCase().includes(queryLower) : false;
   const hostMatches = (uri: string) => {

@@ -11,9 +11,9 @@ export type MCPRequestWithHeaders = MCPRequest & {
 /**
  * Base auth middleware interface for transport-specific authentication.
  * 
- * @template TMiddleware - The type of middleware context returned after successful authentication
+ * @template TAuth - The type of auth context returned after successful authentication
  */
-export interface MCPAuthMiddleware<TMiddleware> {
+export interface MCPAuthMiddleware<TAuth> {
   /** The transport type this middleware handles */
   type: 'http' | 'stdio';
 }
@@ -42,7 +42,7 @@ export interface MCPAuthMiddleware<TMiddleware> {
  * };
  * ```
  */
-export interface MCPHTTPAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<TMiddleware> {
+export interface MCPHTTPAuthMiddleware<TAuth> extends MCPAuthMiddleware<TAuth> {
   /** The transport type - always 'http' for this middleware */
   type: 'http';
   
@@ -58,7 +58,7 @@ export interface MCPHTTPAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<TM
     token: string, 
     resourceUri: string,
     request: MCPRequestWithHeaders
-  ) => Promise<TMiddleware | null>;
+  ) => Promise<TAuth | null>;
   
   /**
    * Optional: Required scopes for this middleware.
@@ -106,7 +106,7 @@ export interface MCPHTTPAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<TM
  * };
  * ```
  */
-export interface MCPSTDIOAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<TMiddleware> {
+export interface MCPSTDIOAuthMiddleware<TAuth> extends MCPAuthMiddleware<TAuth> {
   /** The transport type - always 'stdio' for this middleware */
   type: 'stdio';
   
@@ -118,7 +118,7 @@ export interface MCPSTDIOAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<T
    */
   extractCredentials: (
     env: NodeJS.ProcessEnv
-  ) => Promise<TMiddleware | null>;
+  ) => Promise<TAuth | null>;
 }
 
 /**
@@ -126,9 +126,9 @@ export interface MCPSTDIOAuthMiddleware<TMiddleware> extends MCPAuthMiddleware<T
  * 
  * @template TMiddleware - The type of middleware context returned
  */
-export interface MCPAuthResult<TMiddleware> {
-  /** The authenticated middleware context */
-  middleware: TMiddleware;
+export interface MCPAuthResult<TAuth> {
+  /** The authenticated auth context */
+  middleware: TAuth;
   /** The transport type that was used for authentication */
   transport: 'http' | 'stdio';
 }

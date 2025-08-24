@@ -7,197 +7,227 @@ import type {
   MCPRequestWithHeaders
 } from '../../types/auth';
 import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors';
-import { 
-  extractBearerToken, 
-  validateTokenWithSecurity,
-  type MCPOAuthTokenInfo
-} from './oauth21';
-import { createAuthAuditLog } from './audit-logger';
 
-// Default resource URI extractor
-const defaultResourceUriExtractor: MCPResourceUriExtractor = {
-  extractUri: (request: MCPRequestWithHeaders): string => {
-    // Extract resource URI from request context or use default
-    // This can be enhanced based on the specific resource being accessed
-    const method = request.method;
-    const params = request.params as Record<string, unknown>;
-    
-    // For resource operations, extract the URI
-    if (method === 'resources/read' && params?.uri) {
-      return String(params.uri);
-    }
-    
-    // For tool calls, use the tool name as resource identifier
-    if (method === 'tools/call' && params?.name) {
-      return `tool:${String(params.name)}`;
-    }
-    
-    // Default to the method name as resource identifier
-    return `mcp:${method}`;
+/**
+ * Execute HTTP OAuth 2.1 authentication middleware.
+ * 
+ * Validates Bearer tokens according to OAuth 2.1 specification with resource indicators.
+ * Supports audience validation, scope checking, and security analysis.
+ * 
+ * @param request - The MCP request with headers
+ * @param auth - HTTP auth middleware configuration
+ * @param resourceUriExtractor - Extractor for resource URIs
+ * @returns Promise resolving to auth result or throws AuthError
+ * 
+ * @example
+ * ```typescript
+ * const result = await executeHTTPAuth(request, httpAuth, resourceUriExtractor);
+ * console.log('Authenticated user:', result.middleware.user);
+ * ```
+ */
+export async function executeHTTPAuth<TAuth>(
+  request: MCPRequestWithHeaders | null,
+  auth: MCPHTTPAuthMiddleware<TAuth>,
+  resourceUriExtractor: MCPResourceUriExtractor
+): Promise<MCPAuthResult<TAuth>> {
+  if (!request) {
+    throw new MCPAuthError('HTTP request required for HTTP auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
   }
-};
 
-// HTTP auth execution with OAuth 2.1 compliance
-export async function executeHTTPAuth<TMiddleware>(
-  request: MCPRequestWithHeaders,
-  auth: MCPHTTPAuthMiddleware<TMiddleware>,
-  resourceUriExtractor: MCPResourceUriExtractor = defaultResourceUriExtractor
-): Promise<MCPAuthResult<TMiddleware>> {
-  // Extract Bearer token using OAuth 2.1 compliant extraction
-  const token = extractBearerToken(request);
-  
-  if (!token) {
-    const error = new MCPAuthError('Authorization header required', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
-    if (auth.onAuthError) {
-      auth.onAuthError(error);
-    }
-    createAuthAuditLog('token_validation', { error: 'missing_authorization_header' }, request);
-    throw error;
+  const authHeader = request.headers?.authorization;
+  if (!authHeader) {
+    throw new MCPAuthError('Authorization header required', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
   }
-  
+
+  if (!authHeader.startsWith('Bearer ')) {
+    throw new MCPAuthError('Invalid authorization header format', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
   const resourceUri = resourceUriExtractor.extractUri(request);
-  
-  // Enhanced token validation with OAuth 2.1 security checks
-  if (auth.validateTokenWithSecurity) {
-    // Use enhanced validation if available
-    const requiredScopes = auth.requiredScopes || [];
-    
-    // Create a wrapper that handles null returns
-    const tokenValidator = async (token: string): Promise<MCPOAuthTokenInfo> => {
-      const result = await auth.validateTokenWithSecurity!(token);
-      if (!result) {
-        throw new Error('Token validation returned null');
+
+  try {
+    // Enhanced security validation if available
+    if (auth.validateTokenWithSecurity) {
+      const securityResult = await auth.validateTokenWithSecurity(token);
+      if (!securityResult) {
+        throw new MCPAuthError('Token security validation failed', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
       }
-      return result;
+
+      // Validate required scopes if specified
+      if (auth.requiredScopes && auth.requiredScopes.length > 0) {
+        const tokenScopes = securityResult.scope?.split(' ') || [];
+        const missingScopes = auth.requiredScopes.filter(scope => !tokenScopes.includes(scope));
+        
+        if (missingScopes.length > 0) {
+          throw new MCPAuthError(
+            `Insufficient scope. Required: ${auth.requiredScopes.join(', ')}. Provided: ${tokenScopes.join(', ')}`,
+            MCP_AUTH_ERROR_CODES.FORBIDDEN
+          );
+        }
+      }
+
+      // Validate audience if specified
+      if (securityResult.aud && securityResult.aud.length > 0) {
+        const resourceUriParts = resourceUri.split(':');
+        const resourceDomain = resourceUriParts.length > 1 ? resourceUriParts[1] : resourceUri;
+        
+        if (!securityResult.aud.includes(resourceDomain) && !securityResult.aud.includes(resourceUri)) {
+          throw new MCPAuthError(
+            `Invalid audience. Required: ${securityResult.aud.join(', ')}. Resource: ${resourceUri}`,
+            MCP_AUTH_ERROR_CODES.FORBIDDEN
+          );
+        }
+      }
+    }
+
+    // Main token validation
+    const authContext = await auth.validateToken(token, resourceUri, request);
+    if (!authContext) {
+      throw new MCPAuthError('Invalid or expired token', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
+    }
+
+    return {
+      middleware: authContext,
+      transport: 'http'
     };
-    
-    const validationResult = await validateTokenWithSecurity(
-      token, 
-      resourceUri, 
-      requiredScopes,
-      tokenValidator
-    );
-    
-    if (!validationResult.isValid) {
-      // Log security issues
-      createAuthAuditLog('token_validation', { 
-        securityIssues: validationResult.securityIssues,
-        resourceUri 
-      }, request);
-      
-      // Determine appropriate error response
-      const criticalIssues = validationResult.securityIssues.filter(issue => issue.severity === 'critical');
-      const highIssues = validationResult.securityIssues.filter(issue => issue.severity === 'high');
-      
-      if (criticalIssues.length > 0) {
-        const error = new MCPAuthError('Invalid token', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
-        if (auth.onAuthError) {
-          auth.onAuthError(error);
-        }
-        throw error;
-      } else if (highIssues.length > 0) {
-        const error = new MCPAuthError('Token expired', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
-        if (auth.onAuthError) {
-          auth.onAuthError(error);
-        }
-        throw error;
-      } else {
-        const error = new MCPAuthError('Insufficient scope', MCP_AUTH_ERROR_CODES.FORBIDDEN);
-        if (auth.onAuthError) {
-          auth.onAuthError(error);
-        }
-        throw error;
-      }
+
+  } catch (error) {
+    if (error instanceof MCPAuthError) {
+      throw error;
     }
-    
-    // Log successful validation
-    createAuthAuditLog('auth_success', { 
-      user: validationResult.user,
-      scopes: validationResult.scopes,
-      resourceUri 
-    }, request);
-  }
-  
-  // Validate token using user-provided validator
-  const middleware = await auth.validateToken(token, resourceUri, request);
-  if (!middleware) {
-    const error = new MCPAuthError('Invalid or expired token', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
+
+    // Call custom error handler if provided
     if (auth.onAuthError) {
-      auth.onAuthError(error);
+      const authError = new MCPAuthError(
+        error instanceof Error ? error.message : 'Authentication failed',
+        MCP_AUTH_ERROR_CODES.UNAUTHORIZED
+      );
+      auth.onAuthError(authError);
     }
-    createAuthAuditLog('token_validation', { error: 'token_validation_failed' }, request);
-    throw error;
+
+    throw new MCPAuthError(
+      error instanceof Error ? error.message : 'Authentication failed',
+      MCP_AUTH_ERROR_CODES.UNAUTHORIZED
+    );
   }
-  
-  return {
-    middleware,
-    transport: 'http'
-  };
 }
 
-// STDIO auth execution
-export async function executeSTDIOAuth<TMiddleware>(
-  env: NodeJS.ProcessEnv,
-  auth: MCPSTDIOAuthMiddleware<TMiddleware>
-): Promise<MCPAuthResult<TMiddleware>> {
-  // Extract credentials using user-provided extractor
-  const middleware = await auth.extractCredentials(env);
-  if (!middleware) {
-    const error = new MCPAuthError('Invalid credentials', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
-    throw error;
+/**
+ * Execute STDIO environment-based authentication middleware.
+ * 
+ * Extracts credentials from environment variables for CLI/desktop client integration.
+ * Supports API keys, user IDs, and custom credential patterns.
+ * 
+ * @param env - The Node.js process environment
+ * @param auth - STDIO auth middleware configuration
+ * @returns Promise resolving to auth result or throws AuthError
+ * 
+ * @example
+ * ```typescript
+ * const result = await executeSTDIOAuth(process.env, stdioAuth);
+ * console.log('Authenticated user:', result.middleware.userId);
+ * ```
+ */
+export async function executeSTDIOAuth<TAuth>(
+  env: NodeJS.ProcessEnv | null,
+  auth: MCPSTDIOAuthMiddleware<TAuth>
+): Promise<MCPAuthResult<TAuth>> {
+  if (!env) {
+    throw new MCPAuthError('Environment required for STDIO auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
   }
-  
-  return {
-    middleware,
-    transport: 'stdio'
-  };
+
+  try {
+    const authContext = await auth.extractCredentials(env);
+    if (!authContext) {
+      throw new MCPAuthError('Invalid credentials', MCP_AUTH_ERROR_CODES.UNAUTHORIZED);
+    }
+
+    return {
+      middleware: authContext,
+      transport: 'stdio'
+    };
+
+  } catch (error) {
+    if (error instanceof MCPAuthError) {
+      throw error;
+    }
+
+    throw new MCPAuthError(
+      error instanceof Error ? error.message : 'Authentication failed',
+      MCP_AUTH_ERROR_CODES.UNAUTHORIZED
+    );
+  }
 }
 
-// Generic auth execution that determines transport type
-export async function executeAuth<TMiddleware>(
+/**
+ * Execute transport-appropriate authentication middleware.
+ * 
+ * Automatically selects HTTP or STDIO auth based on middleware type.
+ * Provides unified interface for both transport types.
+ * 
+ * @param request - The MCP request (for HTTP auth)
+ * @param env - The Node.js process environment (for STDIO auth)
+ * @param auth - Auth middleware configuration
+ * @param resourceUriExtractor - Extractor for resource URIs (for HTTP auth)
+ * @returns Promise resolving to auth result or throws AuthError
+ */
+export async function executeAuth<TAuth>(
   request: MCPRequestWithHeaders | null,
   env: NodeJS.ProcessEnv | null,
-  auth: MCPHTTPAuthMiddleware<TMiddleware> | MCPSTDIOAuthMiddleware<TMiddleware>,
-  resourceUriExtractor?: MCPResourceUriExtractor
-): Promise<MCPAuthResult<TMiddleware>> {
-  if (auth.type === 'http') {
-    if (!request) {
-      throw new MCPAuthError('HTTP request required for HTTP auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
-    }
-    return executeHTTPAuth(request, auth, resourceUriExtractor);
-  } else if (auth.type === 'stdio') {
-    if (!env) {
-      throw new MCPAuthError('Environment required for STDIO auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
-    }
-    return executeSTDIOAuth(env, auth);
-  } else {
-    throw new MCPAuthError('Invalid auth middleware type', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
+  auth: MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth>,
+  resourceUriExtractor: MCPResourceUriExtractor
+): Promise<MCPAuthResult<TAuth>> {
+  switch (auth.type) {
+    case 'http':
+      if (!request) {
+        throw new MCPAuthError('HTTP request required for HTTP auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
+      }
+      return executeHTTPAuth(request, auth, resourceUriExtractor);
+
+    case 'stdio':
+      if (!env) {
+        throw new MCPAuthError('Environment required for STDIO auth middleware', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
+      }
+      return executeSTDIOAuth(env, auth);
+
+    default:
+      throw new MCPAuthError('Invalid auth middleware type', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
   }
 }
 
-// Auth validation helpers
-export function validateAuthMiddleware<TMiddleware>(
+/**
+ * Validate auth middleware configuration.
+ * 
+ * Ensures middleware has required properties and correct type.
+ * Used for runtime validation of auth middleware configuration.
+ * 
+ * @param auth - Auth middleware to validate
+ * @returns True if valid, false otherwise
+ */
+export function validateAuthMiddleware<TAuth>(
   auth: unknown
-): auth is MCPHTTPAuthMiddleware<TMiddleware> | MCPSTDIOAuthMiddleware<TMiddleware> {
+): auth is MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth> {
   if (!auth || typeof auth !== 'object') {
     return false;
   }
-  
+
   const authObj = auth as Record<string, unknown>;
-  
+
+  // Check for required type property
   if (authObj.type !== 'http' && authObj.type !== 'stdio') {
     return false;
   }
-  
+
+  // Validate HTTP auth middleware
   if (authObj.type === 'http') {
     return typeof authObj.validateToken === 'function';
-  } else {
+  }
+
+  // Validate STDIO auth middleware
+  if (authObj.type === 'stdio') {
     return typeof authObj.extractCredentials === 'function';
   }
-}
 
-// Resource URI validation helper
-export function validateResourceUri(uri: string): boolean {
-  // Basic URI validation - can be enhanced based on specific requirements
-  return typeof uri === 'string' && uri.length > 0;
+  return false;
 }

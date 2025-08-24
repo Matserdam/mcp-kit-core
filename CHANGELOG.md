@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Authentication & Authorization
+- **Toolkit-Based Authentication**: Complete redesign of authentication system for production-ready security
+  - **Architectural Improvement**: Moved from inefficient global authentication to per-toolkit authentication
+  - **Transport-Specific Auth**: HTTP Bearer token and STDIO credential authentication middleware
+  - **Context Propagation**: HTTP request context passed through RPC handlers for proper auth validation
+  - **Graceful Degradation**: List endpoints filter inaccessible toolkits instead of failing entire requests
+  - **OAuth 2.1 Compliance**: Full OAuth 2.1 protocol compliance with proper error handling
+  - **Type Safety**: Strong TypeScript typing throughout authentication system
+  - **Comprehensive Testing**: 50+ tests covering all authentication scenarios and edge cases
+  - **Security**: Proper error handling, no information leakage, secure token validation
+  - **Documentation**: Complete authentication integration guide with examples
+
 ### Authentication & Security
 - **OAuth 2.1 Compliance**: Complete OAuth 2.1 protocol compliance implementation with comprehensive testing
   - Fixed TypeScript errors in `oauth21.compliance.spec.ts` for proper type safety
