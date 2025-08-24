@@ -8,6 +8,7 @@
 - **Type System**: Eliminated problematic `as any` type assertions in favor of proper typing
 - **Context Handling**: Centralized context creation logic with proper Promise handling
 - **Code Standards**: Removed unnecessary type casts and improved async/await patterns
+- **Mutation Testing**: Added comprehensive mutation tests for `runSearch` and `runFetch` tool runners with 25 edge case scenarios
 
 - Breaking: Tools listed/called as `namespace_tool` (underscore), not `namespace.tool`.
 - Core: `initialize` echoes requested `protocolVersion` (if provided).
