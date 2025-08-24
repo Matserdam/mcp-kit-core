@@ -401,4 +401,175 @@ describe('MCP Compliance Validator', () => {
       expect(malformedResult.errors).toContain('method field is required and must be a string');
     });
   });
+
+  describe('Well-Known Endpoint Compliance', () => {
+    it('should validate OAuth 2.1 Authorization Server Discovery (RFC 8414)', () => {
+      const authServerMetadata = {
+        issuer: 'https://auth.example.com',
+        authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+        token_endpoint: 'https://auth.example.com/oauth/token',
+        introspection_endpoint: 'https://auth.example.com/oauth/introspect',
+        revocation_endpoint: 'https://auth.example.com/oauth/revoke',
+        registration_endpoint: 'https://auth.example.com/oauth/register',
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code', 'refresh_token'],
+        code_challenge_methods_supported: ['S256'],
+        scopes_supported: ['read', 'write', 'admin'],
+        token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+        introspection_endpoint_auth_methods_supported: ['client_secret_basic'],
+        revocation_endpoint_auth_methods_supported: ['client_secret_basic']
+      };
+
+      const result = validator.validateWellKnownEndpoint('/.well-known/oauth-authorization-server', authServerMetadata);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should validate OAuth 2.1 Protected Resource Metadata (RFC 9728)', () => {
+      const protectedResourceMetadata = {
+        resource_indicators_supported: true,
+        authorization_servers: [{
+          issuer: 'https://auth.example.com',
+          authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+          token_endpoint: 'https://auth.example.com/oauth/token',
+          introspection_endpoint: 'https://auth.example.com/oauth/introspect'
+        }],
+        scopes_supported: ['read', 'write'],
+        resource_signing_alg_values_supported: ['RS256', 'ES256']
+      };
+
+      const result = validator.validateWellKnownEndpoint('/.well-known/oauth-protected-resource', protectedResourceMetadata);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should validate well-known endpoint request structure', () => {
+      const wellKnownRequest = {
+        endpoint: 'oauth-authorization-server',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'MCP-Client/1.0'
+        },
+        method: 'GET'
+      };
+
+      const result = validator.validateWellKnownRequest(wellKnownRequest);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should validate well-known endpoint response structure', () => {
+      const wellKnownResponse = {
+        status_code: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=3600',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: Buffer.from(JSON.stringify({
+          issuer: 'https://auth.example.com',
+          authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+          token_endpoint: 'https://auth.example.com/oauth/token'
+        })),
+        content_type: 'application/json'
+      };
+
+      const result = validator.validateWellKnownResponse(wellKnownResponse);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should validate CORS preflight request/response', () => {
+      const corsRequest = {
+        origin: 'https://client.example.com',
+        method: 'GET',
+        headers: ['Content-Type', 'Authorization']
+      };
+
+      const corsResponse = {
+        status_code: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      };
+
+      const requestResult = validator.validateCORSRequest(corsRequest);
+      expect(requestResult.passed).toBe(true);
+      expect(requestResult.errors).toHaveLength(0);
+
+      const responseResult = validator.validateCORSResponse(corsResponse);
+      expect(responseResult.passed).toBe(true);
+      expect(responseResult.errors).toHaveLength(0);
+    });
+
+    it('should validate discovery configuration structure', () => {
+      const discoveryConfig = {
+        authorization_server: {
+          issuer: 'https://auth.example.com',
+          authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+          token_endpoint: 'https://auth.example.com/oauth/token',
+          supported_response_types: ['code'],
+          supported_grant_types: ['authorization_code']
+        },
+        protected_resource: {
+          resource_uri: 'https://mcp.example.com',
+          scopes: ['read', 'write'],
+          audience: ['https://mcp.example.com'],
+          authorization_servers: [{
+            issuer: 'https://auth.example.com',
+            authorization_endpoint: 'https://auth.example.com/oauth/authorize',
+            token_endpoint: 'https://auth.example.com/oauth/token',
+            supported_response_types: ['code'],
+            supported_grant_types: ['authorization_code']
+          }]
+        },
+        enable_discovery_endpoints: true,
+        discovery_cache_ttl: 3600
+      };
+
+      const result = validator.validateDiscoveryConfiguration(discoveryConfig);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should reject invalid authorization server metadata', () => {
+      const invalidMetadata = {
+        // Missing required fields
+        issuer: 'https://auth.example.com',
+        // Missing authorization_endpoint, token_endpoint, etc.
+      };
+
+      const result = validator.validateWellKnownEndpoint('/.well-known/oauth-authorization-server', invalidMetadata);
+
+      expect(result.passed).toBe(false);
+      expect(result.errors).toContain('authorization_endpoint is required and must be a string');
+      expect(result.errors).toContain('token_endpoint is required and must be a string');
+    });
+
+    it('should reject invalid protected resource metadata', () => {
+      const invalidMetadata = {
+        resource_indicators_supported: true,
+        // Missing required authorization_servers array
+      };
+
+      const result = validator.validateWellKnownEndpoint('/.well-known/oauth-protected-resource', invalidMetadata);
+
+      expect(result.passed).toBe(false);
+      expect(result.errors).toContain('authorization_servers is required and must be an array');
+    });
+
+    it('should validate discovery error response structure', () => {
+      const discoveryError = {
+        error: 'invalid_request',
+        error_description: 'Invalid discovery request',
+        error_uri: 'https://example.com/errors/invalid-request'
+      };
+
+      const result = validator.validateDiscoveryError(discoveryError);
+      expect(result.passed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+  });
 });

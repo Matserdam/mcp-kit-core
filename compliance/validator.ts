@@ -58,6 +58,22 @@ export class MCPComplianceValidator {
       this.messageTypes.set('ResourceTemplatesListResult', this.root.lookupType('mcp.ResourceTemplatesListResult'));
       this.messageTypes.set('NotificationAckResult', this.root.lookupType('mcp.NotificationAckResult'));
       this.messageTypes.set('PingResult', this.root.lookupType('mcp.PingResult'));
+      
+      // Well-Known Endpoint message types
+      this.messageTypes.set('WellKnownRequest', this.root.lookupType('mcp.WellKnownRequest'));
+      this.messageTypes.set('WellKnownResponse', this.root.lookupType('mcp.WellKnownResponse'));
+      this.messageTypes.set('WellKnownOAuthAuthorizationServerRequest', this.root.lookupType('mcp.WellKnownOAuthAuthorizationServerRequest'));
+      this.messageTypes.set('WellKnownOAuthAuthorizationServerResponse', this.root.lookupType('mcp.WellKnownOAuthAuthorizationServerResponse'));
+      this.messageTypes.set('WellKnownOAuthProtectedResourceRequest', this.root.lookupType('mcp.WellKnownOAuthProtectedResourceRequest'));
+      this.messageTypes.set('WellKnownOAuthProtectedResourceResponse', this.root.lookupType('mcp.WellKnownOAuthProtectedResourceResponse'));
+      this.messageTypes.set('CORSPreflightRequest', this.root.lookupType('mcp.CORSPreflightRequest'));
+      this.messageTypes.set('CORSPreflightResponse', this.root.lookupType('mcp.CORSPreflightResponse'));
+      this.messageTypes.set('DiscoveryConfiguration', this.root.lookupType('mcp.DiscoveryConfiguration'));
+      this.messageTypes.set('AuthorizationServerConfig', this.root.lookupType('mcp.AuthorizationServerConfig'));
+      this.messageTypes.set('ProtectedResourceConfig', this.root.lookupType('mcp.ProtectedResourceConfig'));
+      this.messageTypes.set('AuthorizationServerMetadata', this.root.lookupType('mcp.AuthorizationServerMetadata'));
+      this.messageTypes.set('ProtectedResourceMetadata', this.root.lookupType('mcp.ProtectedResourceMetadata'));
+      this.messageTypes.set('DiscoveryError', this.root.lookupType('mcp.DiscoveryError'));
     } catch (error) {
       console.error('Failed to load protobuf definitions:', error);
       throw new Error('Failed to initialize MCP compliance validator');
@@ -511,5 +527,216 @@ export class MCPComplianceValidator {
     }
 
     return results;
+  }
+
+  /**
+   * Validate well-known endpoint metadata against RFC 8414 and RFC 9728
+   */
+  validateWellKnownEndpoint(endpoint: string, metadata: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!metadata || typeof metadata !== 'object') {
+      errors.push('Metadata must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const meta = metadata as Record<string, unknown>;
+
+    if (endpoint === '/.well-known/oauth-authorization-server') {
+      // RFC 8414 validation
+      if (!meta.issuer || typeof meta.issuer !== 'string') {
+        errors.push('issuer is required and must be a string');
+      }
+      if (!meta.authorization_endpoint || typeof meta.authorization_endpoint !== 'string') {
+        errors.push('authorization_endpoint is required and must be a string');
+      }
+      if (!meta.token_endpoint || typeof meta.token_endpoint !== 'string') {
+        errors.push('token_endpoint is required and must be a string');
+      }
+      if (!meta.response_types_supported || !Array.isArray(meta.response_types_supported)) {
+        errors.push('response_types_supported is required and must be an array');
+      }
+      if (!meta.grant_types_supported || !Array.isArray(meta.grant_types_supported)) {
+        errors.push('grant_types_supported is required and must be an array');
+      }
+    } else if (endpoint === '/.well-known/oauth-protected-resource') {
+      // RFC 9728 validation
+      if (meta.resource_indicators_supported === undefined || typeof meta.resource_indicators_supported !== 'boolean') {
+        errors.push('resource_indicators_supported is required and must be a boolean');
+      }
+      if (!meta.authorization_servers || !Array.isArray(meta.authorization_servers)) {
+        errors.push('authorization_servers is required and must be an array');
+      }
+    } else {
+      errors.push(`Unknown well-known endpoint: ${endpoint}`);
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate well-known endpoint request structure
+   */
+  validateWellKnownRequest(request: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!request || typeof request !== 'object') {
+      errors.push('Request must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const req = request as Record<string, unknown>;
+
+    if (!req.endpoint || typeof req.endpoint !== 'string') {
+      errors.push('endpoint is required and must be a string');
+    }
+    if (!req.method || typeof req.method !== 'string') {
+      errors.push('method is required and must be a string');
+    }
+    if (req.headers && typeof req.headers !== 'object') {
+      errors.push('headers must be an object if provided');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate well-known endpoint response structure
+   */
+  validateWellKnownResponse(response: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!response || typeof response !== 'object') {
+      errors.push('Response must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const resp = response as Record<string, unknown>;
+
+    if (resp.status_code === undefined || typeof resp.status_code !== 'number') {
+      errors.push('status_code is required and must be a number');
+    }
+    if (!resp.headers || typeof resp.headers !== 'object') {
+      errors.push('headers is required and must be an object');
+    }
+    if (resp.body !== undefined && !(resp.body instanceof Buffer) && typeof resp.body !== 'string') {
+      errors.push('body must be a Buffer or string if provided');
+    }
+    if (resp.content_type && typeof resp.content_type !== 'string') {
+      errors.push('content_type must be a string if provided');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate CORS preflight request
+   */
+  validateCORSRequest(request: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!request || typeof request !== 'object') {
+      errors.push('CORS request must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const req = request as Record<string, unknown>;
+
+    if (!req.origin || typeof req.origin !== 'string') {
+      errors.push('origin is required and must be a string');
+    }
+    if (!req.method || typeof req.method !== 'string') {
+      errors.push('method is required and must be a string');
+    }
+    if (!req.headers || !Array.isArray(req.headers)) {
+      errors.push('headers is required and must be an array');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate CORS preflight response
+   */
+  validateCORSResponse(response: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!response || typeof response !== 'object') {
+      errors.push('CORS response must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const resp = response as Record<string, unknown>;
+
+    if (resp.status_code === undefined || typeof resp.status_code !== 'number') {
+      errors.push('status_code is required and must be a number');
+    }
+    if (!resp.headers || typeof resp.headers !== 'object') {
+      errors.push('headers is required and must be an object');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate discovery configuration structure
+   */
+  validateDiscoveryConfiguration(config: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!config || typeof config !== 'object') {
+      errors.push('Discovery configuration must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const cfg = config as Record<string, unknown>;
+
+    if (!cfg.authorization_server || typeof cfg.authorization_server !== 'object') {
+      errors.push('authorization_server is required and must be an object');
+    }
+    if (!cfg.protected_resource || typeof cfg.protected_resource !== 'object') {
+      errors.push('protected_resource is required and must be an object');
+    }
+    if (cfg.enable_discovery_endpoints !== undefined && typeof cfg.enable_discovery_endpoints !== 'boolean') {
+      errors.push('enable_discovery_endpoints must be a boolean if provided');
+    }
+    if (cfg.discovery_cache_ttl !== undefined && typeof cfg.discovery_cache_ttl !== 'number') {
+      errors.push('discovery_cache_ttl must be a number if provided');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * Validate discovery error response structure
+   */
+  validateDiscoveryError(error: unknown): ComplianceValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!error || typeof error !== 'object') {
+      errors.push('Discovery error must be a valid JSON object');
+      return { passed: false, errors, warnings };
+    }
+
+    const err = error as Record<string, unknown>;
+
+    if (!err.error || typeof err.error !== 'string') {
+      errors.push('error is required and must be a string');
+    }
+    if (err.error_description !== undefined && typeof err.error_description !== 'string') {
+      errors.push('error_description must be a string if provided');
+    }
+    if (err.error_uri !== undefined && typeof err.error_uri !== 'string') {
+      errors.push('error_uri must be a string if provided');
+    }
+
+    return { passed: errors.length === 0, errors, warnings };
   }
 }
