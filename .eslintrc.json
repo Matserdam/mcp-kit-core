@@ -13,8 +13,21 @@
     "sourceType": "module"
   },
   "rules": {
-    "no-tabs": "error",
-    "no-console": ["error", { "allow": [] }],
-    "switch-case-order": ["error", "alphabetical"]
+    "no-tabs": "error"
   }
+  ,
+  "overrides": [
+    {
+      "files": ["src/lib/**/*.ts"],
+      "rules": {
+        "no-console": ["error", { "allow": [] }]
+      }
+    },
+    {
+      "files": ["tests/**/*.ts", "examples/**/*.ts", "scripts/**/*.mjs", "compliance/**/*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

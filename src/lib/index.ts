@@ -16,7 +16,7 @@ export class MCPServer {
   private readonly options: MCPServerOptions;
 
   constructor(options: MCPServerOptions) {
-    this.toolkits = options.toolkits as MCPToolkit<unknown, unknown>[];
+    this.toolkits = options.toolkits;
     this.options = options;
     
     if (options.discovery) {

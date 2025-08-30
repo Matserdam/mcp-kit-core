@@ -27,7 +27,8 @@
     "test": "vitest run",
     "clean": "rimraf dist",
     "check:types": "tsc -p tsconfig.build.json --noEmit",
-    "size": "node -e \"console.log('size check TBD')\"",
+    "size": "node scripts/check-budgets.mjs",
+    "check:rpc-order": "node scripts/check-rpc-order.mjs",
     "load:stdio": "bun tests/load/stdio-perf.ts",
     "compliance": "bun compliance/compliance-check.ts"
   },

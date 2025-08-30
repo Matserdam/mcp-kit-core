@@ -27,22 +27,22 @@ export async function handleRPC(
   switch (method) {
     case 'initialize':
       return handleInitialize(id, params);
-    case 'tools/list':
-      return handleToolsList(id, toolkits);
-    case 'tools/call':
-      return handleToolCall(request, toolkits, context);
-    case 'prompts/list':
-      return handlePromptsList(id, toolkits);
+    case 'ping':
+      return handlePing(id);
     case 'prompts/get':
       return handlePromptsGet(request, toolkits, context);
+    case 'prompts/list':
+      return handlePromptsList(id, toolkits);
     case 'resources/list':
       return handleResourcesList(id, toolkits);
     case 'resources/read':
       return handleResourcesRead(id, params, toolkits, { requestId: id }, context);
     case 'resources/templates/list':
       return handleResourceTemplatesList(id, toolkits);
-    case 'ping':
-      return handlePing(id);
+    case 'tools/call':
+      return handleToolCall(request, toolkits, context);
+    case 'tools/list':
+      return handleToolsList(id, toolkits);
     default:
       return {
         jsonrpc: '2.0',

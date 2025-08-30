@@ -1,3 +1,21 @@
+## PR Checklist
+
+- [ ] Security: No sensitive logging; auth and OAuth changes reviewed
+- [ ] Size budgets: `npm run build` + `node scripts/check-budgets.mjs` pass locally
+- [ ] Cold start: Budget check passes (import `dist/index.js`)
+- [ ] Lint & Types: `npm run lint` and `npm run check:types` pass
+- [ ] RPC ordering: `node scripts/check-rpc-order.mjs` passes
+- [ ] Tests: `npm test` pass locally
+- [ ] Docs: README/docs updated if API, behavior, or budgets changed
+
+### Summary
+
+Describe what changed and why. Link to related issues/docs.
+
+### Screenshots/Logs (if relevant)
+
+### Notes for Reviewers
+
 # Pull Request
 
 ## 📋 Checklist
