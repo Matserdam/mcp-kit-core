@@ -123,16 +123,13 @@ describe('Discovery Handler', () => {
       const metadata = await discoveryHandler.getProtectedResourceMetadata();
 
       expect(metadata).toMatchObject({
+        resource: 'https://mcp.example.com',
         resource_indicators_supported: true,
-        authorization_servers: [{
-          issuer: 'https://auth.example.com',
-          authorization_endpoint: 'https://auth.example.com/oauth/authorize',
-          token_endpoint: 'https://auth.example.com/oauth/token',
-          introspection_endpoint: 'https://auth.example.com/oauth/introspect'
-        }],
+        authorization_servers: ['https://auth.example.com'],
         scopes_supported: ['read', 'write'],
         resource_signing_alg_values_supported: ['RS256', 'ES256']
       });
+      expect(metadata.authorization_servers_metadata?.[0].issuer).toBe('https://auth.example.com');
     });
 
     it('should cache protected resource metadata', async () => {
@@ -170,8 +167,10 @@ describe('Discovery Handler', () => {
       const metadata = await multiServerHandler.getProtectedResourceMetadata();
 
       expect(metadata.authorization_servers).toHaveLength(2);
-      expect(metadata.authorization_servers[0].issuer).toBe('https://auth1.example.com');
-      expect(metadata.authorization_servers[1].issuer).toBe('https://auth2.example.com');
+      expect(metadata.authorization_servers[0]).toBe('https://auth1.example.com');
+      expect(metadata.authorization_servers[1]).toBe('https://auth2.example.com');
+      expect(metadata.authorization_servers_metadata?.[0].issuer).toBe('https://auth1.example.com');
+      expect(metadata.authorization_servers_metadata?.[1].issuer).toBe('https://auth2.example.com');
     });
   });
 
@@ -382,9 +381,10 @@ describe('MCPServer Discovery Integration', () => {
       expect(response.headers.get('Content-Type')).toBe('application/json');
       
       const metadata = await response.json() as MCPProtectedResourceMetadata;
+      expect(metadata.resource).toBe('https://mcp.example.com');
       expect(metadata.resource_indicators_supported).toBe(true);
       expect(metadata.authorization_servers).toHaveLength(1);
-      expect(metadata.authorization_servers[0].issuer).toBe('https://auth.example.com');
+      expect(metadata.authorization_servers[0]).toBe('https://auth.example.com');
     });
 
     it('should handle CORS preflight requests', async () => {

@@ -427,8 +427,12 @@ describe('MCP Compliance Validator', () => {
 
     it('should validate OAuth 2.1 Protected Resource Metadata (RFC 9728)', () => {
       const protectedResourceMetadata = {
+        resource: 'https://mcp.example.com',
         resource_indicators_supported: true,
-        authorization_servers: [{
+        authorization_servers: [
+          'https://auth.example.com'
+        ],
+        authorization_servers_metadata: [{
           issuer: 'https://auth.example.com',
           authorization_endpoint: 'https://auth.example.com/oauth/authorize',
           token_endpoint: 'https://auth.example.com/oauth/token',
@@ -557,6 +561,7 @@ describe('MCP Compliance Validator', () => {
       const result = validator.validateWellKnownEndpoint('/.well-known/oauth-protected-resource', invalidMetadata);
 
       expect(result.passed).toBe(false);
+      expect(result.errors).toContain('resource is required and must be a string');
       expect(result.errors).toContain('authorization_servers is required and must be an array');
     });
 

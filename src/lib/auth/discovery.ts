@@ -104,8 +104,10 @@ export class MCPDiscoveryHandler {
     if (cached) return Promise.resolve(cached);
 
     const metadata: MCPProtectedResourceMetadata = {
+      resource: this.config.protectedResource.resourceUri,
       resource_indicators_supported: true,
-      authorization_servers: this.config.protectedResource.authorizationServers.map(server => ({
+      authorization_servers: this.config.protectedResource.authorizationServers.map(server => server.issuer),
+      authorization_servers_metadata: this.config.protectedResource.authorizationServers.map(server => ({
         issuer: server.issuer,
         authorization_endpoint: server.authorizationEndpoint,
         token_endpoint: server.tokenEndpoint,

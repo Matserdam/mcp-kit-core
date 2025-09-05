@@ -562,11 +562,19 @@ export class MCPComplianceValidator {
       }
     } else if (endpoint === '/.well-known/oauth-protected-resource') {
       // RFC 9728 validation
+      if (!meta.resource || typeof meta.resource !== 'string') {
+        errors.push('resource is required and must be a string');
+      }
       if (meta.resource_indicators_supported === undefined || typeof meta.resource_indicators_supported !== 'boolean') {
         errors.push('resource_indicators_supported is required and must be a boolean');
       }
       if (!meta.authorization_servers || !Array.isArray(meta.authorization_servers)) {
         errors.push('authorization_servers is required and must be an array');
+      } else if (Array.isArray(meta.authorization_servers)) {
+        const nonStrings = (meta.authorization_servers as unknown[]).filter(v => typeof v !== 'string');
+        if (nonStrings.length > 0) {
+          errors.push('authorization_servers must be an array of issuer strings');
+        }
       }
     } else {
       errors.push(`Unknown well-known endpoint: ${endpoint}`);

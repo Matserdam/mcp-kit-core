@@ -168,8 +168,10 @@ export interface MCPAuthorizationServerMetadata {
 }
 
 export interface MCPProtectedResourceMetadata {
+  resource: string;
   resource_indicators_supported: boolean;
-  authorization_servers: MCPAuthorizationServerInfo[];
+  authorization_servers: string[];
+  authorization_servers_metadata?: MCPAuthorizationServerInfo[];
   scopes_supported?: string[];
   resource_signing_alg_values_supported?: string[];
 }
