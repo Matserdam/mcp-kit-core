@@ -8,7 +8,7 @@ import { handleRPC } from './rpc';
 import { responseJson } from './response/json';
 import { responseSSEOnce } from './response/sse';
 import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery';
-import { defaultCORSHandler } from './handlers/cors';
+import { defaultCORSHandler, discoveryCORSHandler } from './handlers/cors';
 
 export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
@@ -75,7 +75,7 @@ export class MCPServer {
         if (method === 'GET') {
           const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
           const response = createDiscoveryResponse(metadata);
-          return defaultCORSHandler.addCORSHeaders(response, request);
+          return discoveryCORSHandler.addCORSHeaders(response, request);
         }
         return new Response('Method Not Allowed', { status: 405 });
       }
@@ -84,7 +84,7 @@ export class MCPServer {
         if (method === 'GET') {
           const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
           const response = createDiscoveryResponse(metadata);
-          return defaultCORSHandler.addCORSHeaders(response, request);
+          return discoveryCORSHandler.addCORSHeaders(response, request);
         }
         return new Response('Method Not Allowed', { status: 405 });
       }

@@ -134,3 +134,15 @@ export const defaultCORSHandler = new CORSHandler({
   allowedHeaders: ['Content-Type'],
   allowCredentials: false
 });
+
+/**
+ * Discovery CORS handler with relaxed allowed headers to support browser-based
+ * discovery by tools (e.g., MCP Inspector) that may include Authorization/Accept
+ * on cross-origin requests. Applies ONLY to well-known discovery endpoints.
+ */
+export const discoveryCORSHandler = new CORSHandler({
+  allowedOrigins: ['*'],
+  allowedMethods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  allowCredentials: false
+});
