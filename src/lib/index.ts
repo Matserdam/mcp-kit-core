@@ -1,15 +1,15 @@
-import type { MCPServerOptions } from '../types/server';
-import type { EventSink } from '../types/observability';
-import { NoopEventSink } from './observability/event-sink';
-import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
-import type { MCPToolkit } from '../types/toolkit';
-import type { MCPDiscoveryConfig } from '../types/auth';
-import { parseFetchRpc } from '../validations/request.fetch';
-import { handleRPC } from './rpc';
-import { responseJson } from './response/json';
-import { responseSSEOnce } from './response/sse';
-import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery';
-import { defaultCORSHandler, discoveryCORSHandler } from './handlers/cors';
+import type { MCPServerOptions } from '../types/server.d.ts';
+import type { EventSink } from '../types/observability.d.ts';
+import { NoopEventSink } from './observability/event-sink.ts';
+import type { MCPStdioOptions, MCPStdioController } from '../types/stdio.d.ts';
+import type { MCPToolkit } from '../types/toolkit.d.ts';
+import type { MCPDiscoveryConfig } from '../types/auth.d.ts';
+import { parseFetchRpc } from '../validations/request.fetch.ts';
+import { handleRPC } from './rpc.ts';
+import { responseJson } from './response/json.ts';
+import { responseSSEOnce } from './response/sse.ts';
+import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery.ts';
+import { defaultCORSHandler, discoveryCORSHandler } from './handlers/cors.ts';
 
 export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
@@ -185,7 +185,7 @@ export class MCPServer {
 
   public startStdio = async (options?: MCPStdioOptions): Promise<MCPStdioController> => {
     // Dynamic import to avoid pulling Node-specific code into edge builds
-    const { StdioController } = await import('./stdio');
+    const { StdioController } = await import('./stdio.ts');
     const controller = new StdioController(this.toolkits, options);
     controller.start();
     return controller;

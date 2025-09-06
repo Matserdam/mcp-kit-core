@@ -1,11 +1,11 @@
 // Export auth execution engine
-export * from './executor';
+export * from './executor.ts';
 
 // Export auth middleware manager
-export * from './middleware';
+export * from './middleware.ts';
 
 // Export auth errors
-export * from './errors';
+export * from './errors.ts';
 
 // Export discovery handler
-export * from './discovery';
+export * from './discovery.ts';

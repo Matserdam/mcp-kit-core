@@ -1,6 +1,6 @@
-import { MCPJSONSchema, MCPToolkit } from "./toolkit";
-import type { MCPDiscoveryConfig } from "./auth";
-import type { EventSink } from "./observability";
+import { MCPJSONSchema, MCPToolkit } from "./toolkit.d.ts";
+import type { MCPDiscoveryConfig } from "./auth.d.ts";
+import type { EventSink } from "./observability.d.ts";
 
 export interface MCPServerOptions {
   toolkits: MCPToolkit<unknown, unknown>[];

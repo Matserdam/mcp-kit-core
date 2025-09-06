@@ -1,4 +1,4 @@
-import type { MCPRequestWithHeaders } from '../../types/auth';
+import type { MCPRequestWithHeaders } from '../../types/auth.d.ts';
 import { debugLoggers } from '../debug';
 
 /**

@@ -11,6 +11,7 @@
     "useDefineForClassFields": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
     "lib": ["ES2020", "DOM"],
     "types": ["node", "bun"]
   }

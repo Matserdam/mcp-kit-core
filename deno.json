@@ -4,13 +4,11 @@
   "description": "Lightweight TypeScript Model Context Protocol (MCP) server package",
   "license": "MIT",
   "exports": {
-    ".": "./src/jsr/index.ts",
-    "./edge": "./src/jsr/index.edge.ts"
+    ".": "./src/index.edge.ts"
   },
   "publish": {
     "include": [
-      "src/jsr/",
-      "dist/",
+      "src/",
       "README.md",
       "CHANGELOG.md",
       "LICENSE",
@@ -22,7 +20,8 @@
       "tests/",
       "node_modules/",
       ".git/",
-      ".github/"
+      ".github/",
+      "dist/"
     ]
   },
   

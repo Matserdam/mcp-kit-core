@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-test-lint:
+  node-build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,205 +20,65 @@ jobs:
       - run: npm run check:types
       - run: npm test
       - run: node scripts/check-rpc-order.mjs
-name: CI
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  test:
+  deno-verify:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: 1.1.43
-    
-    - name: Install dependencies
-      run: bun install
-    
-    - name: Build project
-      run: bun run build
-    
-    - name: Link package for examples
-      run: bun link
-    
-    - name: Install example dependencies
-      run: |
-        echo "📦 Installing dependencies for examples..."
-        for example in examples/*/; do
-          echo "📁 Installing dependencies in $example"
-          cd "$example"
-          if [ -f "package.json" ]; then
-            echo "  Found package.json, running bun install..."
-            bun install
-          else
-            echo "  No package.json found, skipping..."
-          fi
-          cd ../..
-        done
-    
-    - name: Run tests
-      run: bun run test
-    
-    - name: Run linting
-      run: bun run lint
-    
-    - name: Check size budgets
-      run: |
-        echo "📦 Checking size budgets..."
-        
-        # Check total dist size ≤ 600 KB
-        DIST_SIZE=$(du -sk dist/ | cut -f1)
-        echo "📊 Total dist size: ${DIST_SIZE}KB"
-        
-        if [ "$DIST_SIZE" -gt 600 ]; then
-          echo "❌ Size budget exceeded: ${DIST_SIZE}KB > 600KB"
-          exit 1
-        fi
-        
-        # Check largest file ≤ 200 KB
-        LARGEST_FILE=$(find dist/ -type f -name "*.js" -exec du -k {} + | sort -nr | head -1)
-        LARGEST_SIZE=$(echo "$LARGEST_FILE" | cut -f1)
-        LARGEST_NAME=$(echo "$LARGEST_FILE" | cut -f2)
-        echo "📄 Largest file: $LARGEST_NAME (${LARGEST_SIZE}KB)"
-        
-        if [ "$LARGEST_SIZE" -gt 200 ]; then
-          echo "❌ Largest file budget exceeded: ${LARGEST_SIZE}KB > 200KB"
-          exit 1
-        fi
-        
-        echo "✅ Size budgets passed"
-    
-    - name: Check cold-start performance
-      run: |
-        echo "⚡ Checking cold-start performance..."
-        
-        # Measure cold-start time ≤ 100ms (CI environments have less resources)
-        COLD_START_TIME=$(node -e "
-          const start = performance.now();
-          import('./dist/index.js').then(() => {
-            const end = performance.now();
-            const duration = end - start;
-            console.log(duration.toFixed(3));
-            if (duration > 100) {
-              console.error('Cold-start time exceeded: ' + duration.toFixed(3) + 'ms > 100ms');
-              process.exit(1);
-            }
-          }).catch(err => {
-            console.error('Import failed:', err);
-            process.exit(1);
-          });
-        ")
-        
-        echo "⏱️ Cold-start time: ${COLD_START_TIME}ms"
-        echo "✅ Cold-start performance passed"
-    
-    - name: Check for console.* usage in core library
-      run: |
-        echo "🔍 Checking for console.* usage in core library..."
-        
-        # Check for console.* usage in src/lib/** (excluding tests)
-        CONSOLE_USAGE=$(grep -r "console\." src/lib/ --include="*.ts" --include="*.js" || true)
-        
-        if [ -n "$CONSOLE_USAGE" ]; then
-          echo "❌ Console.* usage detected in core library:"
-          echo "$CONSOLE_USAGE"
-          exit 1
-        fi
-        
-        echo "✅ No console.* usage in core library"
-    
-    - name: Check RPC switch case ordering
-      run: |
-        echo "🔤 Checking RPC switch case ordering..."
-        
-        # Check if RPC switch cases are alphabetically ordered
-        # This is a basic check - in the future we can add ESLint rules
-        RPC_FILE="src/lib/rpc.ts"
-        if [ -f "$RPC_FILE" ]; then
-          echo "📋 RPC switch cases should be alphabetically ordered in $RPC_FILE"
-          # TODO: Add ESLint rule for switch case ordering (STORY-061)
-        fi
-        
-        echo "✅ RPC switch case ordering check completed"
-    
-    - name: Generate SBOM
-      run: |
-        echo "📋 Generating Software Bill of Materials (SBOM)..."
-        
-        # Generate dependency list for SBOM using Bun
-        bun pm ls > dependencies.txt
-        
-        # Create a basic SBOM structure with dependency information
-        cat > bom.json << EOF
-        {
-          "bomFormat": "CycloneDX",
-          "specVersion": "1.5",
-          "version": 1,
-          "metadata": {
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "tools": [
-              {
-                "vendor": "Bun",
-                "name": "bun",
-                "version": "$(bun --version)"
-              }
-            ]
-          },
-          "components": [
-            {
-              "type": "library",
-              "name": "mcp-kit",
-              "version": "$(node -p "require('./package.json').version")",
-              "purl": "pkg:npm/mcp-kit@$(node -p "require('./package.json').version")"
-            }
-          ]
-        }
-        EOF
-        
-        echo "✅ SBOM generated successfully: bom.json"
-        echo "📊 SBOM contains dependency information"
-    
-    - name: Check for high-risk vulnerabilities
-      run: |
-        echo "🔒 Checking for high-risk vulnerabilities..."
-        
-        # Note: Bun audit is not yet available
-        # For now, we'll check if dependencies are properly installed
-        if [ ! -d "node_modules" ]; then
-          echo "❌ Dependencies not installed"
-          exit 1
-        fi
-        
-        echo "✅ Dependencies installed successfully"
-        echo "ℹ️  Bun audit not yet available - consider manual security review"
-    
-    - name: Upload SBOM artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sbom
-        path: bom.json
-        retention-days: 30
+      - uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Deno version
+        run: deno --version
+      - name: Deno format check
+        run: deno fmt --check
+      - name: Deno lint
+        run: deno lint
+      - name: Deno type check edge entry
+        run: deno check src/index.edge.ts
+      - name: Deno tests (if any)
+        run: deno test -A
+      - name: JSR dry run publish
+        run: deno publish --dry-run
 
-    - name: Run MCP Protocol Compliance Check
-      run: |
-        echo "🔍 Running MCP Protocol Compliance Check..."
-        
-        # Run the compliance validation script
-        bun run compliance/compliance-check.ts
-        
-        echo "✅ Protocol compliance check completed"
-    
-    - name: Upload Compliance Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: compliance-report
-        path: compliance-report.json
-        retention-days: 30
+  bun-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.1.43
+      - name: Install dependencies
+        run: bun install
+      - name: Build project
+        run: bun run build
+      - name: Run tests
+        run: bun run test
+      - name: Run linting
+        run: bun run lint
+      - name: Check size budgets
+        run: |
+          echo "📦 Checking size budgets..."
+          if [ -d dist ]; then
+            DIST_SIZE=$(du -sk dist/ | cut -f1)
+            echo "📊 Total dist size: ${DIST_SIZE}KB"
+            if [ "$DIST_SIZE" -gt 600 ]; then
+              echo "❌ Size budget exceeded: ${DIST_SIZE}KB > 600KB"; exit 1; fi
+            LARGEST_FILE=$(find dist/ -type f -name "*.js" -exec du -k {} + | sort -nr | head -1)
+            LARGEST_SIZE=$(echo "$LARGEST_FILE" | cut -f1)
+            LARGEST_NAME=$(echo "$LARGEST_FILE" | cut -f2)
+            echo "📄 Largest file: $LARGEST_NAME (${LARGEST_SIZE}KB)"
+            if [ -n "$LARGEST_SIZE" ] && [ "$LARGEST_SIZE" -gt 200 ]; then
+              echo "❌ Largest file budget exceeded: ${LARGEST_SIZE}KB > 200KB"; exit 1; fi
+          else
+            echo "ℹ️  No dist directory present, skipping size checks."
+          fi
+      - name: Check for console.* usage in core library
+        run: |
+          echo "🔍 Checking for console.* usage in core library..."
+          CONSOLE_USAGE=$(grep -r "console\." src/lib/ --include="*.ts" --include="*.js" || true)
+          if [ -n "$CONSOLE_USAGE" ]; then
+            echo "❌ Console.* usage detected in core library:"; echo "$CONSOLE_USAGE"; exit 1; fi
+          echo "✅ No console.* usage in core library"

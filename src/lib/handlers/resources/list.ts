@@ -1,6 +1,6 @@
-import type { MCPResponse, MCPResourcesListResult } from '../../../types/server';
-import type { MCPToolkit, MCPResourceProvider } from '../../../types/toolkit';
-import type { EventSink } from '../../../types/observability';
+import type { MCPResponse, MCPResourcesListResult } from '../../../types/server.d.ts';
+import type { MCPToolkit, MCPResourceProvider } from '../../../types/toolkit.d.ts';
+import type { EventSink } from '../../../types/observability.d.ts';
 
 export const handleResourcesList = (
   id: string | number | null,

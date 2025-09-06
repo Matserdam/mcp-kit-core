@@ -1,14 +1,14 @@
-import type { MCPRequest } from '../../types/server';
-import type { MCPToolkit } from '../../types/toolkit';
+import type { MCPRequest } from '../../types/server.d.ts';
+import type { MCPToolkit } from '../../types/toolkit.d.ts';
 import type { 
   MCPHTTPAuthMiddleware, 
   MCPSTDIOAuthMiddleware, 
   MCPAuthResult,
   MCPResourceUriExtractor,
   MCPRequestWithHeaders
-} from '../../types/auth';
-import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors';
-import { executeAuth, validateAuthMiddleware } from './executor';
+} from '../../types/auth.d.ts';
+import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors.ts';
+import { executeAuth, validateAuthMiddleware } from './executor.ts';
 
 /**
  * Auth middleware manager for handling authentication across multiple toolkits.
@@ -53,8 +53,8 @@ export class MCPAuthMiddlewareManager {
   async executeToolkitAuth<TAuth>(
     toolkit: MCPToolkit<unknown, TAuth>,
     request: MCPRequest | null,
-    env: NodeJS.ProcessEnv | null,
-    eventSink?: import('../../types/observability').EventSink
+    env: Record<string, string> | null,
+    eventSink?: import('../../types/observability.d.ts').EventSink
   ): Promise<MCPAuthResult<TAuth> | null> {
     if (!toolkit.auth) {
       return null; // No auth required
@@ -81,7 +81,7 @@ export class MCPAuthMiddlewareManager {
   async executeToolkitsAuth(
     toolkits: MCPToolkit<unknown, unknown>[],
     request: MCPRequest | null,
-    env: NodeJS.ProcessEnv | null
+    env: Record<string, string> | null
   ): Promise<MCPAuthResult<unknown> | null> {
     for (const toolkit of toolkits) {
       try {
@@ -140,7 +140,7 @@ export class MCPAuthMiddlewareManager {
 }
 
 // Default auth middleware manager instance
-export const defaultAuthMiddlewareManager = new MCPAuthMiddlewareManager();
+export const defaultAuthMiddlewareManager: MCPAuthMiddlewareManager = new MCPAuthMiddlewareManager();
 
 // Auth context for request processing
 export interface MCPAuthContext<TAuth> {
@@ -153,7 +153,7 @@ export interface MCPAuthContext<TAuth> {
 // Create auth context from request and toolkits
 export async function createAuthContext(
   request: MCPRequest | null,
-  env: NodeJS.ProcessEnv | null,
+  env: Record<string, string> | null,
   toolkits: MCPToolkit<unknown, unknown>[],
   authManager: MCPAuthMiddlewareManager = defaultAuthMiddlewareManager
 ): Promise<MCPAuthContext<unknown>> {

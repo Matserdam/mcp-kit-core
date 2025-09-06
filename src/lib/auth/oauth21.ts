@@ -1,4 +1,4 @@
-import type { MCPRequestWithHeaders } from '../../types/auth';
+import type { MCPRequestWithHeaders } from '../../types/auth.d.ts';
 
 /**
  * OAuth 2.1 Token Information interface

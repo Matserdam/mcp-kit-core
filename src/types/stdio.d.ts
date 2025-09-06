@@ -3,10 +3,10 @@
 export type MCPStdioFraming = 'ndjson' | 'length-prefixed';
 
 export interface MCPStdioOptions {
-  /** Defaults to process.stdin when running under Node/Bun. */
-  input?: NodeJS.ReadStream | ReadableStream<Uint8Array>;
-  /** Defaults to process.stdout when running under Node/Bun. */
-  output?: NodeJS.WriteStream | WritableStream<Uint8Array>;
+  /** Readable stream - provide when running under non-Node runtimes too. */
+  input?: ReadableStream<Uint8Array>;
+  /** Writable stream - provide when running under non-Node runtimes too. */
+  output?: WritableStream<Uint8Array>;
   /** Message framing strategy. Default: 'ndjson'. */
   framing?: MCPStdioFraming;
   /** When true (default), install SIGINT/SIGTERM handlers to stop stdio gracefully. */

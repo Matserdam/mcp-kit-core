@@ -1,11 +1,11 @@
-import type { MCPResponse, MCPResourceReadParams, MCPResourceReadResult, MCPRequest } from '../../../types/server';
-import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../types/toolkit';
-import type { ResourceUri } from '../../../types/server';
-import type { MCPRPCContext } from '../../rpc';
-import type { MCPRequestWithHeaders } from '../../../types/auth';
-import { defaultAuthMiddlewareManager } from '../../auth/middleware';
-import { MCPAuthError } from '../../auth/errors';
-import { uriMatchesTemplate } from './util';
+import type { MCPResponse, MCPResourceReadParams, MCPResourceReadResult, MCPRequest } from '../../../types/server.d.ts';
+import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../types/toolkit.d.ts';
+import type { ResourceUri } from '../../../types/server.d.ts';
+import type { MCPRPCContext } from '../../rpc.ts';
+import type { MCPRequestWithHeaders } from '../../../types/auth.d.ts';
+import { defaultAuthMiddlewareManager } from '../../auth/middleware.ts';
+import { MCPAuthError } from '../../auth/errors.ts';
+import { uriMatchesTemplate } from './util.ts';
 
 // Helper function to convert HTTP request to MCPRequestWithHeaders
 function createMCPRequestWithHeaders(

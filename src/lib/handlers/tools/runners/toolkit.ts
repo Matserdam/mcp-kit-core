@@ -1,9 +1,9 @@
-import type { MCPResponse, MCPToolsCallParams, MCPRequest } from '../../../../types/server';
-import type { MCPToolkit, MCPTool } from '../../../../types/toolkit';
-import type { MCPRPCContext } from '../../../../lib/rpc';
-import type { MCPRequestWithHeaders } from '../../../../types/auth';
-import { defaultAuthMiddlewareManager } from '../../../../lib/auth/middleware';
-import { MCPAuthError } from '../../../../lib/auth/errors';
+import type { MCPResponse, MCPToolsCallParams, MCPRequest } from '../../../../types/server.d.ts';
+import type { MCPToolkit, MCPTool } from '../../../../types/toolkit.d.ts';
+import type { MCPRPCContext } from '../../../../lib/rpc.ts';
+import type { MCPRequestWithHeaders } from '../../../../types/auth.d.ts';
+import { defaultAuthMiddlewareManager } from '../../../../lib/auth/middleware.ts';
+import { MCPAuthError } from '../../../../lib/auth/errors.ts';
 
 // Helper function to convert HTTP request to MCPRequestWithHeaders
 function createMCPRequestWithHeaders(

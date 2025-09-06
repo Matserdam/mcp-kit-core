@@ -1,20 +1,20 @@
-import type { MCPRequest, MCPResponse } from '../types/server';
-import type { EventSink } from '../types/observability';
-import type { MCPToolkit } from '../types/toolkit';
-import type { MCPDiscoveryConfig } from '../types/auth';
-import { handleInitialize } from './handlers/initialize';
-import { handleToolsList } from './handlers/tools/list';
-import { handleToolCall } from './handlers/tools/call';
-import { handlePromptsList } from './handlers/prompts/list';
-import { handlePromptsGet } from './handlers/prompts/get';
-import { handleResourcesList } from './handlers/resources/list';
-import { handleResourcesRead } from './handlers/resources/read';
-import { handleResourceTemplatesList } from './handlers/resources/templates.list';
-import { handlePing } from './handlers/ping';
+import type { MCPRequest, MCPResponse } from '../types/server.d.ts';
+import type { EventSink } from '../types/observability.d.ts';
+import type { MCPToolkit } from '../types/toolkit.d.ts';
+import type { MCPDiscoveryConfig } from '../types/auth.d.ts';
+import { handleInitialize } from './handlers/initialize.ts';
+import { handleToolsList } from './handlers/tools/list.ts';
+import { handleToolCall } from './handlers/tools/call.ts';
+import { handlePromptsList } from './handlers/prompts/list.ts';
+import { handlePromptsGet } from './handlers/prompts/get.ts';
+import { handleResourcesList } from './handlers/resources/list.ts';
+import { handleResourcesRead } from './handlers/resources/read.ts';
+import { handleResourceTemplatesList } from './handlers/resources/templates.list.ts';
+import { handlePing } from './handlers/ping.ts';
 
 export interface MCPRPCContext {
   httpRequest?: Request;
-  env?: NodeJS.ProcessEnv;
+  env?: Record<string, string>;
   discovery?: MCPDiscoveryConfig;
   eventSink?: EventSink;
 }

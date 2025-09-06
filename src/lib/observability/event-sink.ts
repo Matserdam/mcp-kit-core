@@ -1,4 +1,4 @@
-import type { EventSink } from '../../types/observability';
+import type { EventSink } from '../../types/observability.d.ts';
 
 export class NoopEventSink implements EventSink {}
 

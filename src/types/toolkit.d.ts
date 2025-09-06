@@ -1,6 +1,6 @@
 import type { ZodTypeAny } from 'zod';
-import type { MCPToolCallResult, MCPResourceReadResult, ResourceUri } from './server';
-import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from './auth';
+import type { MCPToolCallResult, MCPResourceReadResult, ResourceUri } from './server.d.ts';
+import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from './auth.d.ts';
 
 export type MCPJSONSchema = {
   $id?: string;

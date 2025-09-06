@@ -1,7 +1,7 @@
-import type { MCPRequest, MCPResponse } from '../types/server';
-import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
+import type { MCPRequest, MCPResponse } from '../types/server.d.ts';
+import type { MCPStdioOptions, MCPStdioController } from '../types/stdio.d.ts';
 import { handleRPC } from './rpc';
-import type { MCPToolkit } from '../types/toolkit';
+import type { MCPToolkit } from '../types/toolkit.d.ts';
 import { createAuthContext, defaultAuthMiddlewareManager } from './auth';
 
 const textEncoder = new TextEncoder();

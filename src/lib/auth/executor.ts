@@ -5,8 +5,8 @@ import type {
   MCPAuthResult,
   MCPResourceUriExtractor,
   MCPRequestWithHeaders
-} from '../../types/auth';
-import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors';
+} from '../../types/auth.d.ts';
+import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors.ts';
 
 /**
  * Execute HTTP OAuth 2.1 authentication middleware.
@@ -130,7 +130,7 @@ export async function executeHTTPAuth<TAuth>(
  * ```
  */
 export async function executeSTDIOAuth<TAuth>(
-  env: NodeJS.ProcessEnv | null,
+  env: Record<string, string> | null,
   auth: MCPSTDIOAuthMiddleware<TAuth>
 ): Promise<MCPAuthResult<TAuth>> {
   if (!env) {
@@ -174,7 +174,7 @@ export async function executeSTDIOAuth<TAuth>(
  */
 export async function executeAuth<TAuth>(
   request: MCPRequestWithHeaders | null,
-  env: NodeJS.ProcessEnv | null,
+  env: Record<string, string> | null,
   auth: MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth>,
   resourceUriExtractor: MCPResourceUriExtractor
 ): Promise<MCPAuthResult<TAuth>> {

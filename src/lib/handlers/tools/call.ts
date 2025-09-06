@@ -1,10 +1,10 @@
-import type { MCPRequest, MCPResponse, MCPToolsCallParams } from '../../../types/server';
-import type { MCPToolkit } from '../../../types/toolkit';
-import type { MCPRPCContext } from '../../rpc';
-import { runToolkitTool } from './runners/toolkit';
-import { runSearch } from './runners/search';
-import { runFetch } from './runners/fetch';
-import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas';
+import type { MCPRequest, MCPResponse, MCPToolsCallParams } from '../../../types/server.d.ts';
+import type { MCPToolkit } from '../../../types/toolkit.d.ts';
+import type { MCPRPCContext } from '../../rpc.ts';
+import { runToolkitTool } from './runners/toolkit.ts';
+import { runSearch } from './runners/search.ts';
+import { runFetch } from './runners/fetch.ts';
+import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas.ts';
 
 export const handleToolCall = async (
   request: MCPRequest,

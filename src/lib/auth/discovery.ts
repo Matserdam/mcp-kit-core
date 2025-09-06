@@ -3,7 +3,7 @@ import type {
   MCPProtectedResourceMetadata,
   MCPDiscoveryConfig,
   MCPDiscoveryError
-} from '../../types/auth';
+} from '../../types/auth.d.ts';
 
 /**
  * Discovery handler for OAuth 2.1 server discovery and metadata endpoints.

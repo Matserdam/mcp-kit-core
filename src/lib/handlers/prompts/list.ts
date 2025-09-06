@@ -1,6 +1,6 @@
-import type { MCPResponse, MCPPROMPTSListResult } from '../../../types/server';
-import type { MCPToolkit, MCPPromptDef } from '../../../types/toolkit';
-import type { EventSink } from '../../../types/observability';
+import type { MCPResponse, MCPPROMPTSListResult } from '../../../types/server.d.ts';
+import type { MCPToolkit, MCPPromptDef } from '../../../types/toolkit.d.ts';
+import type { EventSink } from '../../../types/observability.d.ts';
 
 export const handlePromptsList = (
   id: string | number | null,

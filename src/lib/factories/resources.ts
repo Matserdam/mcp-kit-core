@@ -1,4 +1,4 @@
-import type { MCPResourceProvider, MCPResourceTemplateProvider, MCPResourceProviderInit, MCPResourceTemplateProviderInit } from '../../types/toolkit';
+import type { MCPResourceProvider, MCPResourceTemplateProvider, MCPResourceProviderInit, MCPResourceTemplateProviderInit } from '../../types/toolkit.d.ts';
 
 export function createMCPResourceProvider<TContext = unknown>(init: MCPResourceProviderInit<TContext>): MCPResourceProvider<TContext> {
   return {

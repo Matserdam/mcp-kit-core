@@ -1,8 +1,8 @@
-import type { MCPResponse, MCPToolsListResult } from '../../../types/server';
-import type { MCPToolkit, MCPTool } from '../../../types/toolkit';
-import type { EventSink } from '../../../types/observability';
-import { getValidSchema } from '../../../utils';
-import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas';
+import type { MCPResponse, MCPToolsListResult } from '../../../types/server.d.ts';
+import type { MCPToolkit, MCPTool } from '../../../types/toolkit.d.ts';
+import type { EventSink } from '../../../types/observability.d.ts';
+import { getValidSchema } from '../../../utils.ts';
+import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas.ts';
 
 export const handleToolsList = (
   id: string | number | null,

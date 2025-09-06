@@ -1,4 +1,5 @@
-import type { MCPRequest } from './server';
+import type { MCPRequest } from './server.d.ts';
+import type { MCPOAuthTokenInfo } from '../lib/auth/oauth21.ts';
 
 /**
  * Extended request type with headers for auth processing.
@@ -73,7 +74,7 @@ export interface MCPHTTPAuthMiddleware<TAuth> extends MCPAuthMiddleware<TAuth> {
    */
   validateTokenWithSecurity?: (
     token: string
-  ) => Promise<import('../lib/auth/oauth21').MCPOAuthTokenInfo | null>;
+  ) => Promise<MCPOAuthTokenInfo | null>;
   
   /**
    * Optional callback for custom error handling.
@@ -117,7 +118,7 @@ export interface MCPSTDIOAuthMiddleware<TAuth> extends MCPAuthMiddleware<TAuth> 
    * @returns Promise resolving to middleware context or null if invalid
    */
   extractCredentials: (
-    env: NodeJS.ProcessEnv
+    env: Record<string, string>
   ) => Promise<TAuth | null>;
 }
 
@@ -148,7 +149,7 @@ export interface MCPResourceUriExtractor {
 }
 
 // Re-export auth error and codes from lib implementation
-export { MCPAuthError, MCP_AUTH_ERROR_CODES } from '../lib/auth/errors';
+export { MCPAuthError, MCP_AUTH_ERROR_CODES } from '../lib/auth/errors.ts';
 
 // Server Discovery & Metadata types (RFC 8414, RFC 9728)
 export interface MCPAuthorizationServerMetadata {

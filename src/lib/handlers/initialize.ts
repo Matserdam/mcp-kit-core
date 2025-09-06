@@ -1,4 +1,4 @@
-import type { MCPResponse } from '../../types/server';
+import type { MCPResponse } from '../../types/server.d.ts';
 
 export function handleInitialize(id: string | number | null, params: unknown): MCPResponse {
   const requestedProtocol = (params as { protocolVersion?: unknown })?.protocolVersion;
