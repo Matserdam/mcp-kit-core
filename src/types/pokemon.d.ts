@@ -19,5 +19,3 @@ export interface MCPPokemonSoundOutput {
   name: string;
   url: string;
 }
-
-

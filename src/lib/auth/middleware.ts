@@ -1,28 +1,28 @@
-import type { MCPRequest } from '../../types/server.d.ts';
-import type { MCPToolkit } from '../../types/toolkit.d.ts';
-import type { 
-  MCPHTTPAuthMiddleware, 
-  MCPSTDIOAuthMiddleware, 
+import type { MCPRequest } from "../../types/server.d.ts";
+import type { MCPToolkit } from "../../types/toolkit.d.ts";
+import type {
   MCPAuthResult,
+  MCPHTTPAuthMiddleware,
+  MCPRequestWithHeaders,
   MCPResourceUriExtractor,
-  MCPRequestWithHeaders
-} from '../../types/auth.d.ts';
-import { MCPAuthError, MCP_AUTH_ERROR_CODES } from './errors.ts';
-import { executeAuth, validateAuthMiddleware } from './executor.ts';
+  MCPSTDIOAuthMiddleware,
+} from "../../types/auth.d.ts";
+import { MCP_AUTH_ERROR_CODES, MCPAuthError } from "./errors.ts";
+import { executeAuth, validateAuthMiddleware } from "./executor.ts";
 
 /**
  * Auth middleware manager for handling authentication across multiple toolkits.
- * 
+ *
  * Provides centralized auth execution, validation, and context creation for MCP servers.
  * Supports both HTTP OAuth 2.1 and STDIO environment-based authentication patterns.
- * 
+ *
  * @example
  * ```typescript
  * const authManager = new MCPAuthMiddlewareManager();
- * 
+ *
  * // Execute auth for a toolkit
  * const result = await authManager.executeToolkitAuth(toolkit, request, env);
- * 
+ *
  * // Create auth context for request processing
  * const context = await createAuthContext(request, env, toolkits, authManager);
  * ```
@@ -35,17 +35,17 @@ export class MCPAuthMiddlewareManager {
       extractUri: (request: MCPRequestWithHeaders): string => {
         const method = request.method;
         const params = request.params as Record<string, unknown>;
-        
-        if (method === 'resources/read' && params?.uri) {
+
+        if (method === "resources/read" && params?.uri) {
           return String(params.uri);
         }
-        
-        if (method === 'tools/call' && params?.name) {
+
+        if (method === "tools/call" && params?.name) {
           return `tool:${String(params.name)}`;
         }
-        
+
         return `mcp:${method}`;
-      }
+      },
     };
   }
 
@@ -54,25 +54,39 @@ export class MCPAuthMiddlewareManager {
     toolkit: MCPToolkit<unknown, TAuth>,
     request: MCPRequest | null,
     env: Record<string, string> | null,
-    eventSink?: import('../../types/observability.d.ts').EventSink
+    eventSink?: import("../../types/observability.d.ts").EventSink,
   ): Promise<MCPAuthResult<TAuth> | null> {
     if (!toolkit.auth) {
       return null; // No auth required
     }
 
     if (!validateAuthMiddleware<TAuth>(toolkit.auth)) {
-      throw new MCPAuthError('Invalid auth middleware configuration', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
+      throw new MCPAuthError(
+        "Invalid auth middleware configuration",
+        MCP_AUTH_ERROR_CODES.BAD_REQUEST,
+      );
     }
 
-    try { eventSink?.toolkitAuthStart?.({ toolkit: toolkit.namespace }); } catch {}
-    
     try {
-      const result = await executeAuth(request as MCPRequestWithHeaders | null, env, toolkit.auth, this.resourceUriExtractor);
-      try { eventSink?.toolkitAuthSuccess?.({ toolkit: toolkit.namespace }); } catch {}
+      eventSink?.toolkitAuthStart?.({ toolkit: toolkit.namespace });
+    } catch { /* ignore sink errors */ }
+
+    try {
+      const result = await executeAuth(
+        request as MCPRequestWithHeaders | null,
+        env,
+        toolkit.auth,
+        this.resourceUriExtractor,
+      );
+      try {
+        eventSink?.toolkitAuthSuccess?.({ toolkit: toolkit.namespace });
+      } catch { /* ignore sink errors */ }
       return result;
     } catch (error) {
-      const reason = error instanceof MCPAuthError ? error.message : 'Authentication failed';
-      try { eventSink?.toolkitAuthFail?.({ toolkit: toolkit.namespace, reason }); } catch {}
+      const reason = error instanceof MCPAuthError ? error.message : "Authentication failed";
+      try {
+        eventSink?.toolkitAuthFail?.({ toolkit: toolkit.namespace, reason });
+      } catch { /* ignore sink errors */ }
       throw error;
     }
   }
@@ -81,7 +95,7 @@ export class MCPAuthMiddlewareManager {
   async executeToolkitsAuth(
     toolkits: MCPToolkit<unknown, unknown>[],
     request: MCPRequest | null,
-    env: Record<string, string> | null
+    env: Record<string, string> | null,
   ): Promise<MCPAuthResult<unknown> | null> {
     for (const toolkit of toolkits) {
       try {
@@ -103,12 +117,12 @@ export class MCPAuthMiddlewareManager {
 
   // Check if any toolkit requires auth
   requiresAuth(toolkits: MCPToolkit<unknown, unknown>[]): boolean {
-    return toolkits.some(toolkit => 'auth' in toolkit && toolkit.auth !== undefined);
+    return toolkits.some((toolkit) => "auth" in toolkit && toolkit.auth !== undefined);
   }
 
   // Get auth middleware for a specific toolkit
   getAuthMiddleware<TAuth>(
-    toolkit: MCPToolkit<unknown, TAuth>
+    toolkit: MCPToolkit<unknown, TAuth>,
   ): MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth> | null {
     if (!toolkit.auth || !validateAuthMiddleware<TAuth>(toolkit.auth)) {
       return null;
@@ -118,7 +132,9 @@ export class MCPAuthMiddlewareManager {
   }
 
   // Validate auth configuration across all toolkits
-  validateAuthConfiguration(toolkits: MCPToolkit<unknown, unknown>[]): { valid: boolean; errors: string[] } {
+  validateAuthConfiguration(
+    toolkits: MCPToolkit<unknown, unknown>[],
+  ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     for (const toolkit of toolkits) {
@@ -129,7 +145,7 @@ export class MCPAuthMiddlewareManager {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -140,12 +156,13 @@ export class MCPAuthMiddlewareManager {
 }
 
 // Default auth middleware manager instance
-export const defaultAuthMiddlewareManager: MCPAuthMiddlewareManager = new MCPAuthMiddlewareManager();
+export const defaultAuthMiddlewareManager: MCPAuthMiddlewareManager =
+  new MCPAuthMiddlewareManager();
 
 // Auth context for request processing
 export interface MCPAuthContext<TAuth> {
   middleware: TAuth | null;
-  transport: 'http' | 'stdio' | null;
+  transport: "http" | "stdio" | null;
   toolkit: string | null;
   authenticated: boolean;
 }
@@ -155,33 +172,33 @@ export async function createAuthContext(
   request: MCPRequest | null,
   env: Record<string, string> | null,
   toolkits: MCPToolkit<unknown, unknown>[],
-  authManager: MCPAuthMiddlewareManager = defaultAuthMiddlewareManager
+  authManager: MCPAuthMiddlewareManager = defaultAuthMiddlewareManager,
 ): Promise<MCPAuthContext<unknown>> {
   if (!authManager.requiresAuth(toolkits)) {
     return {
       middleware: null,
       transport: null,
       toolkit: null,
-      authenticated: true // No auth required
+      authenticated: true, // No auth required
     };
   }
 
   try {
     const authResult = await authManager.executeToolkitsAuth(toolkits, request, env);
-    
+
     if (authResult) {
       return {
         middleware: authResult.middleware,
         transport: authResult.transport,
         toolkit: null, // Could be enhanced to track which toolkit provided auth
-        authenticated: true
+        authenticated: true,
       };
     } else {
       return {
         middleware: null,
         transport: null,
         toolkit: null,
-        authenticated: false
+        authenticated: false,
       };
     }
   } catch (error) {
@@ -190,7 +207,7 @@ export async function createAuthContext(
         middleware: null,
         transport: null,
         toolkit: null,
-        authenticated: false
+        authenticated: false,
       };
     }
     throw error;

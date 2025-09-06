@@ -1,6 +1,6 @@
-import type { ZodTypeAny } from 'zod';
-import type { MCPToolCallResult, MCPResourceReadResult, ResourceUri } from './server.d.ts';
-import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from './auth.d.ts';
+import type { ZodTypeAny } from "zod";
+import type { MCPResourceReadResult, MCPToolCallResult, ResourceUri } from "./server.d.ts";
+import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from "./auth.d.ts";
 
 export type MCPJSONSchema = {
   $id?: string;
@@ -12,12 +12,12 @@ export type MCPJSONSchema = {
     [key: string]: MCPJSONSchema;
   };
   required?: string[];
-  enum?: any[];
+  enum?: unknown[];
   items?: MCPJSONSchema | MCPJSONSchema[];
   additionalProperties?: boolean | MCPJSONSchema;
   pattern?: string;
   format?: string;
-  default?: any;
+  default?: unknown;
   minimum?: number;
   maximum?: number;
   minLength?: number;
@@ -28,7 +28,7 @@ export type MCPJSONSchema = {
   oneOf?: MCPJSONSchema[];
   not?: MCPJSONSchema;
 };
-export type MCPSchemaDef = { zod?: ZodTypeAny, jsonSchema?: MCPJSONSchema };
+export type MCPSchemaDef = { zod?: ZodTypeAny; jsonSchema?: MCPJSONSchema };
 
 export interface MCPToolkitInit {
   requestId?: string | number | null;
@@ -44,12 +44,12 @@ export interface MCPTool<TContext = unknown, TInput = unknown> {
 
 export type MCPToolRunner<TContext = unknown> = (
   input: unknown,
-  context: TContext
+  context: TContext,
 ) => Promise<unknown>;
 
 export type MCPToolMiddleware<TContext = unknown> = (
   next: MCPToolRunner<TContext>,
-  info: { toolkit: MCPToolkit<TContext, unknown>; tool: MCPTool<TContext, unknown> }
+  info: { toolkit: MCPToolkit<TContext, unknown>; tool: MCPTool<TContext, unknown> },
 ) => MCPToolRunner<TContext>;
 
 export interface MCPToolkitMiddleware<TContext = unknown> {
@@ -67,8 +67,10 @@ export interface MCPPromptDef<TContext = unknown, TInput = unknown> {
 
 export type MCPPromptCallMessagesResult = Array<MCPMessage>;
 
-
-export type MCPMessage = { role: 'user' | 'assistant' | 'system'; content: { type: 'text'; text: string } }
+export type MCPMessage = {
+  role: "user" | "assistant" | "system";
+  content: { type: "text"; text: string };
+};
 
 // Resource provider: single, read-only resource exposure (MVP)
 export interface MCPResourceProvider<TContext = unknown> {
@@ -107,7 +109,10 @@ export interface MCPResourceTemplateProvider<TContext = unknown> {
 
 export type MCPResourceTemplateProviderInit<TContext = unknown> = {
   descriptor: MCPResourceTemplateDescriptor;
-  read: (uri: ResourceUri, context: TContext) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
+  read: (
+    uri: ResourceUri,
+    context: TContext,
+  ) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
 };
 
 export interface MCPToolkit<TContext, TAuth> {
@@ -118,10 +123,7 @@ export interface MCPToolkit<TContext, TAuth> {
   createContext?(init: MCPToolkitInit): Promise<Record<string, unknown>> | Record<string, unknown>;
   resources?: Array<MCPResourceProvider<TContext>>;
   resourceTemplates?: Array<MCPResourceTemplateProvider<TContext>>;
-  
+
   // Transport-specific auth middleware
   auth?: MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth>;
 }
-
-
-

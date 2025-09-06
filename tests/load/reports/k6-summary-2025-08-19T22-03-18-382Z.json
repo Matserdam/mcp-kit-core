@@ -5,70 +5,70 @@
     "id": "d41d8cd98f00b204e9800998ecf8427e",
     "groups": [],
     "checks": [
-        {
-          "fails": 0,
-          "name": "init json status 200",
-          "path": "::init json status 200",
-          "id": "d7c8bde8940674f6ff0a52114f2e14ad",
-          "passes": 5440
-        },
-        {
-          "passes": 5440,
-          "fails": 0,
-          "name": "init json body has jsonrpc",
-          "path": "::init json body has jsonrpc",
-          "id": "2d11c61773a4945355b2cb323bc5d5fe"
-        },
-        {
-          "name": "list json status 200",
-          "path": "::list json status 200",
-          "id": "73fff17b84d0bc01cb8d785be03d935b",
-          "passes": 5440,
-          "fails": 0
-        },
-        {
-          "name": "list json body has jsonrpc",
-          "path": "::list json body has jsonrpc",
-          "id": "aefeeced807c54d378e5594991956590",
-          "passes": 5440,
-          "fails": 0
-        },
-        {
-          "id": "1b8e8cf13eff2408bfb00d3a89bb6f3a",
-          "passes": 5440,
-          "fails": 0,
-          "name": "call json status 200",
-          "path": "::call json status 200"
-        },
-        {
-          "id": "4aaf3058443eee5450c0621b489367b0",
-          "passes": 5440,
-          "fails": 0,
-          "name": "call json body has jsonrpc",
-          "path": "::call json body has jsonrpc"
-        },
-        {
-          "name": "init sse status 200",
-          "path": "::init sse status 200",
-          "id": "563cb4c2d2a4e8923cae838d2a508752",
-          "passes": 5440,
-          "fails": 0
-        },
-        {
-          "path": "::init sse content-type",
-          "id": "08579cde69dec634c102c96f8584b250",
-          "passes": 0,
-          "fails": 5440,
-          "name": "init sse content-type"
-        },
-        {
-          "path": "::init sse body has data frame",
-          "id": "408b3cd60d4fef827ae67c856c355eae",
-          "passes": 0,
-          "fails": 5440,
-          "name": "init sse body has data frame"
-        }
-      ]
+      {
+        "fails": 0,
+        "name": "init json status 200",
+        "path": "::init json status 200",
+        "id": "d7c8bde8940674f6ff0a52114f2e14ad",
+        "passes": 5440
+      },
+      {
+        "passes": 5440,
+        "fails": 0,
+        "name": "init json body has jsonrpc",
+        "path": "::init json body has jsonrpc",
+        "id": "2d11c61773a4945355b2cb323bc5d5fe"
+      },
+      {
+        "name": "list json status 200",
+        "path": "::list json status 200",
+        "id": "73fff17b84d0bc01cb8d785be03d935b",
+        "passes": 5440,
+        "fails": 0
+      },
+      {
+        "name": "list json body has jsonrpc",
+        "path": "::list json body has jsonrpc",
+        "id": "aefeeced807c54d378e5594991956590",
+        "passes": 5440,
+        "fails": 0
+      },
+      {
+        "id": "1b8e8cf13eff2408bfb00d3a89bb6f3a",
+        "passes": 5440,
+        "fails": 0,
+        "name": "call json status 200",
+        "path": "::call json status 200"
+      },
+      {
+        "id": "4aaf3058443eee5450c0621b489367b0",
+        "passes": 5440,
+        "fails": 0,
+        "name": "call json body has jsonrpc",
+        "path": "::call json body has jsonrpc"
+      },
+      {
+        "name": "init sse status 200",
+        "path": "::init sse status 200",
+        "id": "563cb4c2d2a4e8923cae838d2a508752",
+        "passes": 5440,
+        "fails": 0
+      },
+      {
+        "path": "::init sse content-type",
+        "id": "08579cde69dec634c102c96f8584b250",
+        "passes": 0,
+        "fails": 5440,
+        "name": "init sse content-type"
+      },
+      {
+        "path": "::init sse body has data frame",
+        "id": "408b3cd60d4fef827ae67c856c355eae",
+        "passes": 0,
+        "fails": 5440,
+        "name": "init sse body has data frame"
+      }
+    ]
   },
   "options": {
     "summaryTrendStats": [

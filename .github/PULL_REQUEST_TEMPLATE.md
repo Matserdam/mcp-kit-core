@@ -21,6 +21,7 @@ Describe what changed and why. Link to related issues/docs.
 ## 📋 Checklist
 
 ### 🚀 **Before submitting**
+
 - [ ] **Tests**: All tests pass (`bun run test`)
 - [ ] **Linting**: No lint errors (`bun run lint`)
 - [ ] **Build**: Project builds successfully (`bun run build`)
@@ -28,6 +29,7 @@ Describe what changed and why. Link to related issues/docs.
 - [ ] **Console Usage**: No `console.*` in core library (`src/lib/**`)
 
 ### 🔒 **Security & Quality**
+
 - [ ] **Dependencies**: No new high-risk dependencies added
 - [ ] **SBOM**: SBOM generation works (if applicable)
 - [ ] **Type Safety**: No `as any` type assertions added
@@ -35,18 +37,21 @@ Describe what changed and why. Link to related issues/docs.
 - [ ] **Input Validation**: All inputs validated with Zod schemas
 
 ### 📚 **Documentation**
+
 - [ ] **README**: Updated if public API changed
 - [ ] **Changelog**: Entry added for user-facing changes
 - [ ] **Comments**: Complex logic documented
 - [ ] **Examples**: Examples updated if API changed
 
 ### 🧪 **Testing**
+
 - [ ] **Coverage**: New code has test coverage
 - [ ] **Edge Cases**: Edge cases tested
 - [ ] **Integration**: Integration tests pass
 - [ ] **Performance**: No performance regressions
 
 ### 🔄 **Process**
+
 - [ ] **Branch**: Created from `main` or `develop`
 - [ ] **Commits**: Clear, descriptive commit messages
 - [ ] **Scope**: Single logical change per PR
@@ -86,6 +91,7 @@ Describe what changed and why. Link to related issues/docs.
 <!-- The following will be verified by reviewers -->
 
 ### **Automated Checks**
+
 - [ ] ✅ CI pipeline passes
 - [ ] ✅ Size budgets within limits
 - [ ] ✅ No console.* usage in core
@@ -93,6 +99,7 @@ Describe what changed and why. Link to related issues/docs.
 - [ ] ✅ Linting passes
 
 ### **Manual Review**
+
 - [ ] ✅ Code follows project conventions
 - [ ] ✅ No security vulnerabilities introduced
 - [ ] ✅ Documentation updated appropriately

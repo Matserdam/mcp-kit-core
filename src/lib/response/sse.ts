@@ -8,11 +8,9 @@ export function responseSSEOnce(payload: unknown): Response {
     },
   });
   const headers = new Headers({
-    'content-type': 'text/event-stream; charset=utf-8',
-    'cache-control': 'no-cache',
-    'connection': 'keep-alive',
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
   });
   return new Response(stream, { status: 200, headers });
 }
-
-

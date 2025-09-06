@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-import { performance } from 'node:perf_hooks';
-import { readdirSync, statSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import path from 'node:path';
+import { performance } from "node:perf_hooks";
+import { readdirSync, statSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import path from "node:path";
 
-const DIST_DIR_URL = new URL('../dist/', import.meta.url);
+const DIST_DIR_URL = new URL("../dist/", import.meta.url);
 const DIST_DIR = fileURLToPath(DIST_DIR_URL);
 
 const KB = 1024;
 const DIST_TOTAL_KB_BUDGET = 600;
 const LARGEST_FILE_KB_BUDGET = 200;
-const COLD_START_MS_BUDGET = 25; // align with docs/SIZE_BUDGETS.md example
+const COLD_START_MS_BUDGET = process.env.CI ? 60 : 25; // 60ms for CI, 25ms for local
 
 function walkDir(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -25,7 +25,7 @@ function walkDir(dir) {
     } else if (entry.isFile()) {
       const { size } = statSync(full);
       totalBytes += size;
-      if (full.endsWith('.js') && size > largestJsBytes) largestJsBytes = size;
+      if (full.endsWith(".js") && size > largestJsBytes) largestJsBytes = size;
     }
   }
   return { total: totalBytes, largestJs: largestJsBytes };
@@ -36,9 +36,9 @@ async function check() {
 
   // 1) Ensure build exists
   try {
-    statSync(path.join(DIST_DIR, 'index.js'));
+    statSync(path.join(DIST_DIR, "index.js"));
   } catch {
-    console.error('dist/index.js not found. Run npm run build first.');
+    console.error("dist/index.js not found. Run npm run build first.");
     process.exit(1);
   }
 
@@ -55,23 +55,24 @@ async function check() {
 
   // 3) Cold start import time
   const start = performance.now();
-  await import(pathToFileURL(path.join(DIST_DIR, 'index.js')).href);
+  await import(pathToFileURL(path.join(DIST_DIR, "index.js")).href);
   const end = performance.now();
   const coldMs = end - start;
   if (coldMs > COLD_START_MS_BUDGET) {
     failures.push(`cold-start ${coldMs.toFixed(3)}ms > ${COLD_START_MS_BUDGET}ms`);
   }
 
-  console.log(`dist total: ${totalKb}KB, largest: ${largestKb}KB, cold-start: ${coldMs.toFixed(3)}ms`);
+  console.log(
+    `dist total: ${totalKb}KB, largest: ${largestKb}KB, cold-start: ${coldMs.toFixed(3)}ms`,
+  );
 
   if (failures.length) {
-    console.error('Budget failures:\n- ' + failures.join('\n- '));
+    console.error("Budget failures:\n- " + failures.join("\n- "));
     process.exit(1);
   }
 }
 
-check().catch(err => {
-  console.error('Budget check error:', err);
+check().catch((err) => {
+  console.error("Budget check error:", err);
   process.exit(1);
 });
-

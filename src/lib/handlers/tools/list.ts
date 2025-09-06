@@ -1,15 +1,17 @@
-import type { MCPResponse, MCPToolsListResult } from '../../../types/server.d.ts';
-import type { MCPToolkit, MCPTool } from '../../../types/toolkit.d.ts';
-import type { EventSink } from '../../../types/observability.d.ts';
-import { getValidSchema } from '../../../utils.ts';
-import { canonicalFetchInputSchema, canonicalSearchInputSchema } from './schemas.ts';
+import type { MCPResponse, MCPToolsListResult } from "../../../types/server.d.ts";
+import type { MCPTool, MCPToolkit } from "../../../types/toolkit.d.ts";
+import type { EventSink } from "../../../types/observability.d.ts";
+import { getValidSchema } from "../../../utils.ts";
+import { canonicalFetchInputSchema, canonicalSearchInputSchema } from "./schemas.ts";
 
 export const handleToolsList = (
   id: string | number | null,
   toolkits: MCPToolkit<unknown, unknown>[],
-  eventSink?: EventSink
+  eventSink?: EventSink,
 ): MCPResponse => {
-  try { eventSink?.toolsListStart?.({ id }); } catch {}
+  try {
+    eventSink?.toolsListStart?.({ id });
+  } catch { /* ignore sink errors */ }
   const tools = toolkits.flatMap((toolkit) =>
     (toolkit.tools ?? []).map((tool: MCPTool<unknown, unknown>) => {
       const fullName = `${toolkit.namespace}_${tool.name}`;
@@ -17,30 +19,30 @@ export const handleToolsList = (
       const outputSchema = getValidSchema(tool.output);
       return {
         name: fullName,
-        description: tool.description ?? '',
+        description: tool.description ?? "",
         inputSchema,
-        outputSchema
+        outputSchema,
       };
     })
   );
 
   // Always include canonical tools
   tools.push({
-    name: 'search',
-    description: 'Canonical search tool',
+    name: "search",
+    description: "Canonical search tool",
     inputSchema: getValidSchema({ zod: canonicalSearchInputSchema }),
-    outputSchema: { type: 'object' },
+    outputSchema: { type: "object" },
   });
   tools.push({
-    name: 'fetch',
-    description: 'Canonical fetch tool',
+    name: "fetch",
+    description: "Canonical fetch tool",
     inputSchema: getValidSchema({ zod: canonicalFetchInputSchema }),
-    outputSchema: { type: 'object' },
+    outputSchema: { type: "object" },
   });
 
   const result: MCPToolsListResult = { tools };
-  try { eventSink?.toolsListSuccess?.({ id, count: tools.length }); } catch {}
-  return { jsonrpc: '2.0', id, result };
+  try {
+    eventSink?.toolsListSuccess?.({ id, count: tools.length });
+  } catch { /* ignore sink errors */ }
+  return { jsonrpc: "2.0", id, result };
 };
-
-

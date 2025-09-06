@@ -14,8 +14,7 @@
   },
   "rules": {
     "no-tabs": "error"
-  }
-  ,
+  },
   "overrides": [
     {
       "files": ["src/lib/**/*.ts"],

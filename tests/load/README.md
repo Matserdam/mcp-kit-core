@@ -4,14 +4,14 @@
 
 ### HTTP (k6)
 
-1) Start the sample HTTP server (uses the `demo.calculate` tool):
+1. Start the sample HTTP server (uses the `demo.calculate` tool):
 
 ```bash
 cd examples/mcp-simple-bun-fetch
 bun index.ts
 ```
 
-2) In another terminal, run the k6 script against `http://localhost:3000`:
+2. In another terminal, run the k6 script against `http://localhost:3000`:
 
 ```bash
 # Install k6 from https://k6.io/ if you don't have it
@@ -56,5 +56,3 @@ N=2000 C=128 WARMUP=100 bun tests/load/stdio-perf.ts
 
 - For HTTP, you can also explore other tools like autocannon/wrk if desired, but k6 is the primary.
 - Ensure your environment uses Bun for Bun-run scripts.
-
-

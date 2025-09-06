@@ -8,23 +8,23 @@
     N=1000 C=64 WARMUP=50 OUT=tests/load/reports/stdio-<ts>.json bun tests/load/stdio-perf.ts
 */
 
-import { MCPServer, type MCPTool, type MCPToolCallResult } from '../../src/index';
-import z from 'zod';
-import { mkdirSync } from 'node:fs';
-import path from 'node:path';
+import { MCPServer, type MCPTool, type MCPToolCallResult } from "../../src/index";
+import z from "zod";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
-type JsonRpcRequest = { jsonrpc: '2.0'; id: number; method: string; params?: unknown };
+type JsonRpcRequest = { jsonrpc: "2.0"; id: number; method: string; params?: unknown };
 
 const textEncoder = new TextEncoder();
 
 // Simple demo toolkit (matches README pattern)
 const calcTool: MCPTool<unknown, { a: number; b: number }> = {
-  name: 'calculate',
-  description: 'Calculate the sum of two numbers, divided by a random number',
+  name: "calculate",
+  description: "Calculate the sum of two numbers, divided by a random number",
   input: { zod: z.object({ a: z.number().min(0), b: z.number().min(0) }) },
   run({ a, b }) {
     const result: MCPToolCallResult = {
-      content: [{ type: 'text', text: (a + b / Math.max(Math.random(), 1e-6)).toString() }],
+      content: [{ type: "text", text: (a + b / Math.max(Math.random(), 1e-6)).toString() }],
     };
     return result;
   },
@@ -32,7 +32,7 @@ const calcTool: MCPTool<unknown, { a: number; b: number }> = {
 
 const server = new MCPServer({
   toolkits: [
-    { namespace: 'demo', tools: [calcTool] },
+    { namespace: "demo", tools: [calcTool] },
   ],
 });
 
@@ -56,7 +56,7 @@ let nextId = 1;
 const sentAt = new Map<number, number>();
 const latencies: number[] = [];
 
-let buffered = '';
+let buffered = "";
 const readLoop = async () => {
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -65,13 +65,13 @@ const readLoop = async () => {
     if (!value) continue;
     buffered += value;
     let idx: number;
-    while ((idx = buffered.indexOf('\n')) !== -1) {
+    while ((idx = buffered.indexOf("\n")) !== -1) {
       const line = buffered.slice(0, idx);
       buffered = buffered.slice(idx + 1);
       if (!line.trim()) continue;
       try {
         const msg = JSON.parse(line) as { id: number | null };
-        if (typeof msg.id === 'number' && sentAt.has(msg.id)) {
+        if (typeof msg.id === "number" && sentAt.has(msg.id)) {
           const started = sentAt.get(msg.id)!;
           sentAt.delete(msg.id);
           const delta = performance.now() - started;
@@ -85,15 +85,18 @@ const readLoop = async () => {
 };
 
 const send = async (req: JsonRpcRequest) => {
-  const line = JSON.stringify(req) + '\n';
+  const line = JSON.stringify(req) + "\n";
   await writer.write(textEncoder.encode(line));
 };
 
 const buildCall = (id: number): JsonRpcRequest => ({
-  jsonrpc: '2.0',
+  jsonrpc: "2.0",
   id,
-  method: 'tools/call',
-  params: { name: 'demo.calculate', arguments: { a: Math.floor(Math.random() * 10), b: Math.floor(Math.random() * 10) + 1 } },
+  method: "tools/call",
+  params: {
+    name: "demo.calculate",
+    arguments: { a: Math.floor(Math.random() * 10), b: Math.floor(Math.random() * 10) + 1 },
+  },
 });
 
 const main = async () => {
@@ -162,11 +165,14 @@ const main = async () => {
     latencyMs: { avg, p50, p95, p99, max },
   };
 
-  const outDir = path.join(process.cwd(), 'tests', 'load', 'reports');
+  const outDir = path.join(process.cwd(), "tests", "load", "reports");
   mkdirSync(outDir, { recursive: true });
-  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
   const outPath = process.env.OUT || path.join(outDir, `stdio-summary-${ts}.json`);
-  await (Bun as { write: (path: string, data: string) => Promise<void> }).write(outPath, JSON.stringify(report, null, 2));
+  await (Bun as { write: (path: string, data: string) => Promise<void> }).write(
+    outPath,
+    JSON.stringify(report, null, 2),
+  );
 
   // Also print a short summary
   // console.log(`[stdio-perf] total=${TOTAL} concurrency=${CONCURRENCY} durationMs=${durationMs.toFixed(2)} throughputRps=${throughput.toFixed(2)}`);
@@ -177,5 +183,3 @@ main().catch(() => {
   // console.error(err);
   process.exit(1);
 });
-
-

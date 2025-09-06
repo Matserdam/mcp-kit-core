@@ -1,6 +1,6 @@
 // STDIO transport types
 
-export type MCPStdioFraming = 'ndjson' | 'length-prefixed';
+export type MCPStdioFraming = "ndjson" | "length-prefixed";
 
 export interface MCPStdioOptions {
   /** Readable stream - provide when running under non-Node runtimes too. */
@@ -24,5 +24,3 @@ export interface MCPStdioController {
    */
   notify(method: string, params?: Record<string, unknown>): boolean;
 }
-
-
