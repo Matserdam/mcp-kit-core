@@ -1,4 +1,5 @@
 import type { MCPRequest, MCPResponse } from '../types/server';
+import type { EventSink } from '../types/observability';
 import type { MCPToolkit } from '../types/toolkit';
 import type { MCPDiscoveryConfig } from '../types/auth';
 import { handleInitialize } from './handlers/initialize';
@@ -15,6 +16,7 @@ export interface MCPRPCContext {
   httpRequest?: Request;
   env?: NodeJS.ProcessEnv;
   discovery?: MCPDiscoveryConfig;
+  eventSink?: EventSink;
 }
 
 export async function handleRPC(
@@ -23,6 +25,8 @@ export async function handleRPC(
   context?: MCPRPCContext
 ): Promise<MCPResponse> {
   const { id, method, params } = request;
+  const sink = context?.eventSink;
+  try { sink?.rpcReceived?.({ id, method }); } catch {}
 
   switch (method) {
     case 'initialize':
@@ -44,13 +48,15 @@ export async function handleRPC(
     case 'tools/list':
       return handleToolsList(id, toolkits);
     default:
-      return {
+      const errorResp = {
         jsonrpc: '2.0',
         id,
         error: {
           code: -32601,
           message: 'Method not found'
         }
-      };
+      } as MCPResponse;
+      try { sink?.rpcFailed?.({ id, method, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+      return errorResp;
   }
 }

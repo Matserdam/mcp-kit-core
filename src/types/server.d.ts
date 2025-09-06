@@ -1,9 +1,12 @@
 import { MCPJSONSchema, MCPToolkit } from "./toolkit";
 import type { MCPDiscoveryConfig } from "./auth";
+import type { EventSink } from "./observability";
 
 export interface MCPServerOptions {
   toolkits: MCPToolkit<unknown, unknown>[];
   discovery?: MCPDiscoveryConfig;
+  /** Optional event sink for audit/observability. Defaults to no-op. */
+  eventSink?: EventSink;
 }
 
 export interface MCPResponse {

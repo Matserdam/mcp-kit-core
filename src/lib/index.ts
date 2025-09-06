@@ -1,4 +1,6 @@
 import type { MCPServerOptions } from '../types/server';
+import type { EventSink } from '../types/observability';
+import { NoopEventSink } from './observability/event-sink';
 import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
 import type { MCPToolkit } from '../types/toolkit';
 import type { MCPDiscoveryConfig } from '../types/auth';
@@ -14,10 +16,12 @@ export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
   private readonly discoveryHandler?: MCPDiscoveryHandler;
   private readonly options: MCPServerOptions;
+  private readonly eventSink: EventSink;
 
   constructor(options: MCPServerOptions) {
     this.toolkits = options.toolkits;
     this.options = options;
+    this.eventSink = options.eventSink ?? new NoopEventSink();
     
     if (options.discovery) {
       // Validate discovery configuration
@@ -128,7 +132,8 @@ export class MCPServer {
 
     const response = await handleRPC(parsed, this.toolkits, {
       httpRequest: request,
-      discovery: this.options.discovery
+      discovery: this.options.discovery,
+      eventSink: this.eventSink
     });
     
     let finalResponse: Response;
@@ -159,6 +164,7 @@ export class MCPServer {
       return defaultCORSHandler.addCORSHeaders(errorResponse, request);
     }
     
+    try { this.eventSink.rpcSucceeded?.({ id: response.id, method: (parsed as { method?: string }).method ?? 'unknown' }); } catch {}
     return defaultCORSHandler.addCORSHeaders(finalResponse, request);
   };
 
