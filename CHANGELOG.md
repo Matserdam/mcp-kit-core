@@ -1,3 +1,14 @@
+## 0.0.3 (2025-01-27)
+
+### Added
+
+- Provenance-backed JSR publishing via GitHub Actions (`.github/workflows/publish.yml`)
+
+### Changed
+
+- Bumped version to 0.0.3 for JSR publish
+- Clarified JSR package metadata to be managed in Settings (description, runtimes)
+
 ## 0.0.2 (2025-01-27)
 
 ### Fixed
