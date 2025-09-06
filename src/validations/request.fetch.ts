@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
+import { generateId } from '../lib/utils/uuid';
 import { MCPRequest, MCPToolsCallParams } from '../types/server';
 
 const allowedMethods = ['initialize', 'notifications/initialized', 'tools/list', 'tools/call', 'prompts/list', 'prompts/get', 'resources/list', 'resources/read', 'resources/templates/list', 'ping'] as const;
@@ -54,10 +54,7 @@ export function parseFetchRpc(input: unknown): MCPRequest {
     return { id, method: 'ping', params: {}, error: { code: -32600, message: parsed.error.message } };
   }
   const { id: maybeId, method, params } = parsed.data;
-  const globalThisObj = globalThis as Record<string, unknown>;
-  const crypto = globalThisObj?.crypto as { randomUUID?: () => string } | undefined;
-  const generatedId: string = crypto?.randomUUID?.() ?? randomUUID();
-  const id = maybeId === undefined ? generatedId : maybeId;
+  const id = maybeId === undefined ? generateId() : maybeId;
 
   if (method === 'tools/call') {
     return { id, method, params: params as MCPToolsCallParams };

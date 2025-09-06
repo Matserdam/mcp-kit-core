@@ -1,14 +1,32 @@
 import { defineConfig } from 'tsup';
 
-export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm'],
-  dts: true,
-  clean: true,
-  sourcemap: false, // Disable source maps to reduce bundle size
-  target: 'node18',
-  minify: false,
-  treeshake: true,
-});
+export default defineConfig([
+  // Node build (includes stdio)
+  {
+    entry: ['src/index.ts'],
+    format: ['esm'],
+    dts: true,
+    clean: true,
+    sourcemap: false,
+    target: 'node18',
+    minify: false,
+    treeshake: true,
+    outDir: 'dist',
+  },
+  // Edge/Deno build (excludes stdio)
+  {
+    entry: ['src/index.edge.ts'],
+    format: ['esm'],
+    dts: true,
+    clean: false, // Don't clean since we're building multiple configs
+    sourcemap: false,
+    target: 'es2022',
+    platform: 'neutral',
+    minify: false,
+    treeshake: true,
+    outDir: 'dist',
+    outExtension: () => ({ js: '.edge.js', dts: '.edge.d.ts' }),
+  },
+]);
 
 

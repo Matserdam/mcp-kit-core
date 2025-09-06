@@ -1,7 +1,6 @@
 import type { MCPServerOptions } from '../types/server';
 import type { EventSink } from '../types/observability';
 import { NoopEventSink } from './observability/event-sink';
-import type { MCPStdioOptions, MCPStdioController } from '../types/stdio';
 import type { MCPToolkit } from '../types/toolkit';
 import type { MCPDiscoveryConfig } from '../types/auth';
 import { parseFetchRpc } from '../validations/request.fetch';
@@ -167,10 +166,6 @@ export class MCPServer {
     return defaultCORSHandler.addCORSHeaders(finalResponse, request);
   };
 
-  public stdio(): void {
-    // Placeholder for stdio transport
-  }
-
   public httpStreamable(req: unknown): Promise<{ status: number; headers: Headers; body: ReadableStream<Uint8Array> }>{
     void req;
     const encoder = new TextEncoder();
@@ -183,13 +178,6 @@ export class MCPServer {
     return Promise.resolve({ status: 501, headers: new Headers({ 'content-type': 'text/plain' }), body: stream });
   }
 
-  public startStdio = async (options?: MCPStdioOptions): Promise<MCPStdioController> => {
-    // Dynamic import to avoid pulling Node-specific code into edge builds
-    const { StdioController } = await import('./stdio');
-    const controller = new StdioController(this.toolkits, options);
-    controller.start();
-    return controller;
-  }
+  // Note: stdio transport is not available in edge builds
+  // Use fetch() method for HTTP-based MCP handling
 }
-
-
