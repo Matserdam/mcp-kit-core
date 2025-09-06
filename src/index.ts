@@ -4,7 +4,7 @@ export type * from './types/toolkit';
 export type * from './types/server';
 export type * from './types/config';
 export type * from './types/stdio';
-export type * from './types/pokemon';
+// Note: example-specific types must not leak into core
 export type * from './types/search';
 export type * from './types/auth';
 export type { EventSink } from './types/observability';

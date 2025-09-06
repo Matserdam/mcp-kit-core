@@ -1,0 +1,42 @@
+{
+  "name": "@mcp-kit/core",
+  "version": "0.0.1",
+  "description": "Lightweight TypeScript Model Context Protocol (MCP) server package",
+  "license": "MIT",
+  "exports": {
+    ".": { "default": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./edge": { "default": "./dist/index.edge.js", "types": "./dist/index.edge.d.ts" }
+  },
+  "publish": {
+    "include": [
+      "src/",
+      "dist/",
+      "README.md",
+      "CHANGELOG.md",
+      "LICENSE",
+      "compliance/"
+    ],
+    "exclude": [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "tests/",
+      "node_modules/",
+      ".git/",
+      ".github/"
+    ]
+  },
+  
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}
