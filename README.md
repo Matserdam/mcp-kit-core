@@ -29,6 +29,10 @@ import { MCPServer } from '@mcp-kit/core';
 Deno:
 ```ts
 import { MCPServer, type MCPToolkit } from 'jsr:@mcp-kit/core';
+import z from 'zod';
+
+const helloInputSchema = z.object({ name: z.string().min(1) });
+const helloOutputSchema = z.object({ message: z.string() });
 
 const helloToolkit: MCPToolkit = {
   namespace: 'hello',
@@ -36,16 +40,11 @@ const helloToolkit: MCPToolkit = {
     {
       name: 'hello_say',
       description: 'Say hello to a name',
-      inputSchema: {
-        jsonSchema: {
-          type: 'object',
-          properties: { name: { type: 'string' } },
-          required: ['name'],
-          additionalProperties: false
-        }
-      },
+      input: { zod: helloInputSchema },
+      output: { zod: helloOutputSchema },
       execute: async ({ name }) => ({
-        content: [{ type: 'text', text: `Hello, ${name}!` }]
+        content: [{ type: 'text', text: `Hello, ${name}!` }],
+        structuredContent: { message: `Hello, ${name}!` }
       })
     }
   ]
@@ -58,6 +57,10 @@ Deno.serve(req => server.fetch(req));
 Bun:
 ```ts
 import { MCPServer, type MCPToolkit } from '@mcp-kit/core';
+import z from 'zod';
+
+const helloInputSchema = z.object({ name: z.string().min(1) });
+const helloOutputSchema = z.object({ message: z.string() });
 
 const helloToolkit: MCPToolkit = {
   namespace: 'hello',
@@ -65,16 +68,11 @@ const helloToolkit: MCPToolkit = {
     {
       name: 'hello_say',
       description: 'Say hello to a name',
-      inputSchema: {
-        jsonSchema: {
-          type: 'object',
-          properties: { name: { type: 'string' } },
-          required: ['name'],
-          additionalProperties: false
-        }
-      },
+      input: { zod: helloInputSchema },
+      output: { zod: helloOutputSchema },
       execute: async ({ name }) => ({
-        content: [{ type: 'text', text: `Hello, ${name}!` }]
+        content: [{ type: 'text', text: `Hello, ${name}!` }],
+        structuredContent: { message: `Hello, ${name}!` }
       })
     }
   ]
