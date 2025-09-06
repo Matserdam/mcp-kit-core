@@ -4,12 +4,8 @@ import { NoopEventSink } from './observability/event-sink.ts';
 import type { MCPStdioOptions, MCPStdioController } from '../types/stdio.d.ts';
 import type { MCPToolkit } from '../types/toolkit.d.ts';
 import type { MCPDiscoveryConfig } from '../types/auth.d.ts';
-import { parseFetchRpc } from '../validations/request.fetch.ts';
-import { handleRPC } from './rpc.ts';
-import { responseJson } from './response/json.ts';
-import { responseSSEOnce } from './response/sse.ts';
 import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery.ts';
-import { defaultCORSHandler, discoveryCORSHandler } from './handlers/cors.ts';
+import { validateDiscoveryConfig, handleFetchRequest } from './server/helpers.ts';
 
 export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
@@ -32,144 +28,31 @@ export class MCPServer {
   /**
    * Validate discovery configuration
    */
-  private validateDiscoveryConfig(config: MCPDiscoveryConfig): void {
-    // Validate authorization server configuration
-    if (!config.authorizationServer.issuer || config.authorizationServer.issuer.trim() === '') {
-      throw new Error('Invalid discovery configuration: Authorization server issuer is required');
-    }
-    
-    if (!config.authorizationServer.authorizationEndpoint) {
-      throw new Error('Invalid discovery configuration: Authorization server authorization endpoint is required');
-    }
-    
-    if (!config.authorizationServer.tokenEndpoint) {
-      throw new Error('Invalid discovery configuration: Authorization server token endpoint is required');
-    }
-
-    // Validate protected resource configuration
-    if (!config.protectedResource.resourceUri) {
-      throw new Error('Invalid discovery configuration: Protected resource URI is required');
-    }
-    
-    if (!config.protectedResource.authorizationServers || config.protectedResource.authorizationServers.length === 0) {
-      throw new Error('Invalid discovery configuration: At least one authorization server is required');
-    }
-    
-    for (const server of config.protectedResource.authorizationServers) {
-      if (!server.issuer || server.issuer.trim() === '') {
-        throw new Error('Invalid discovery configuration: Authorization server issuer is required');
-      }
-    }
-  }
+  private validateDiscoveryConfig(config: MCPDiscoveryConfig): void { validateDiscoveryConfig(config); }
 
   fetch = async (request: Request): Promise<Response> => {
-    const method = request.method.toUpperCase();
-    const url = new URL(request.url);
-
-    // Handle CORS preflight requests first
-    const corsResponse = defaultCORSHandler.handlePreflight(request);
-    if (corsResponse) {
-      return corsResponse;
-    }
-
-    // Handle discovery endpoints
-    if (this.discoveryHandler && this.options.discovery?.enableDiscoveryEndpoints !== false) {
+    const resolveDiscovery = async (url: URL): Promise<Response | null> => {
+      if (!this.discoveryHandler || this.options.discovery?.enableDiscoveryEndpoints === false) return null;
       if (url.pathname === '/.well-known/oauth-authorization-server') {
-        if (method === 'GET') {
-          const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
-          const response = createDiscoveryResponse(metadata);
-          return discoveryCORSHandler.addCORSHeaders(response, request);
-        }
-        return new Response('Method Not Allowed', { status: 405 });
+        const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
+        return createDiscoveryResponse(metadata);
       }
-      
       if (url.pathname === '/.well-known/oauth-protected-resource') {
-        if (method === 'GET') {
-          const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
-          const response = createDiscoveryResponse(metadata);
-          return discoveryCORSHandler.addCORSHeaders(response, request);
-        }
-        return new Response('Method Not Allowed', { status: 405 });
+        const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
+        return createDiscoveryResponse(metadata);
       }
-    }
-
-    if (method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-
-    let rpc: unknown;
-    try {
-      rpc = await request.json();
-    } catch {
-      const errorResponse = responseJson({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 });
-      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
-    }
-    
-    // Accept negotiation
-    const accept = request.headers.get('accept') ?? '*/*';
-    const wantsEventStream = /(^|,|\s)text\/event-stream(\s*;|\s|$)/i.test(accept);
-    const wantsJson = /(^|,|\s)application\/json(\s*;|\s|$)/i.test(accept) || accept.includes('*/*');
-
-    // If client sent a JSON-RPC response payload (not a request), ack with 202
-    const isClientResponse = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && !('method' in rpc) && (('result' in rpc) || ('error' in rpc));
-    if (isClientResponse) {
-      const response = new Response(null, { status: 202 });
-      return defaultCORSHandler.addCORSHeaders(response, request);
-    }
-    
-    const parsed = parseFetchRpc(rpc);
-    if ("error" in parsed) {
-      const errorResponse = responseJson({ jsonrpc: '2.0', id: parsed.id, error: parsed.error }, { status: 400 });
-      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
-    }
-    
-    // Notification (no id provided by client payload)
-    const isNotification = rpc && typeof rpc === 'object' && (rpc as Record<string, unknown>).jsonrpc === '2.0' && typeof (rpc as Record<string, unknown>).method === 'string' && !('id' in rpc);
-    if (isNotification) {
-      void handleRPC(parsed, this.toolkits);
-      const response = new Response(null, { status: 202 });
-      return defaultCORSHandler.addCORSHeaders(response, request);
-    }
-
-    const response = await handleRPC(parsed, this.toolkits, {
-      httpRequest: request,
+      return null;
+    };
+    return handleFetchRequest({
+      request,
+      toolkits: this.toolkits,
       discovery: this.options.discovery,
-      eventSink: this.eventSink
+      eventSink: this.eventSink,
+      resolveDiscovery,
+      discoveryHandler: this.discoveryHandler
     });
-    
-    let finalResponse: Response;
-    if (wantsEventStream && !wantsJson) {
-      finalResponse = responseSSEOnce(response);
-    } else if (wantsEventStream && wantsJson) {
-      // Prefer SSE when explicitly requested alongside JSON
-      finalResponse = responseSSEOnce(response);
-    } else {
-      finalResponse = responseJson(response);
-    }
-    
-    // Handle auth errors with proper HTTP status and headers
-    if (this.discoveryHandler && 'error' in response && response.error?.code === -32001) {
-      const wwwAuthHeader = this.discoveryHandler.createWWWAuthenticateHeader(request.url);
-      const enhancedErrorResponse = this.discoveryHandler.createDiscoveryErrorResponse(
-        response.id,
-        request.url,
-        'invalid_token',
-        response.error.message
-      );
-      const errorResponse = responseJson(enhancedErrorResponse, { 
-        status: 401,
-        headers: {
-          'WWW-Authenticate': wwwAuthHeader
-        }
-      });
-      return defaultCORSHandler.addCORSHeaders(errorResponse, request);
-    }
-    
-    try { this.eventSink.rpcSucceeded?.({ id: response.id, method: (parsed as { method?: string }).method ?? 'unknown' }); } catch {}
-    return defaultCORSHandler.addCORSHeaders(finalResponse, request);
   };
 
-  public stdio(): void {
-    // Placeholder for stdio transport
-  }
 
   public httpStreamable(req: unknown): Promise<{ status: number; headers: Headers; body: ReadableStream<Uint8Array> }>{
     void req;

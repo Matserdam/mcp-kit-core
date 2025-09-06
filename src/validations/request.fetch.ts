@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { generateId } from '../lib/utils/uuid.ts';
-import { MCPRequest, MCPToolsCallParams } from '../types/server.d.ts';
+import type { MCPRequest, MCPToolsCallParams } from '../types/server.d.ts';
 
 const allowedMethods = ['initialize', 'notifications/initialized', 'tools/list', 'tools/call', 'prompts/list', 'prompts/get', 'resources/list', 'resources/read', 'resources/templates/list', 'ping'] as const;
 export type AllowedFetchMethod = typeof allowedMethods[number];

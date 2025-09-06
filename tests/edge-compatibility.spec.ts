@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MCPServer } from '../src/index.edge';
+import { MCPServer } from '../src/mod';
 import { generateId } from '../src/lib/utils/uuid';
 
 describe('Edge Compatibility', () => {
