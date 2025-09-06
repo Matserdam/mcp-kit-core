@@ -53,7 +53,8 @@ export class MCPAuthMiddlewareManager {
   async executeToolkitAuth<TAuth>(
     toolkit: MCPToolkit<unknown, TAuth>,
     request: MCPRequest | null,
-    env: NodeJS.ProcessEnv | null
+    env: NodeJS.ProcessEnv | null,
+    eventSink?: import('../../types/observability').EventSink
   ): Promise<MCPAuthResult<TAuth> | null> {
     if (!toolkit.auth) {
       return null; // No auth required
@@ -63,7 +64,17 @@ export class MCPAuthMiddlewareManager {
       throw new MCPAuthError('Invalid auth middleware configuration', MCP_AUTH_ERROR_CODES.BAD_REQUEST);
     }
 
-    return executeAuth(request as MCPRequestWithHeaders | null, env, toolkit.auth, this.resourceUriExtractor);
+    try { eventSink?.toolkitAuthStart?.({ toolkit: toolkit.namespace }); } catch {}
+    
+    try {
+      const result = await executeAuth(request as MCPRequestWithHeaders | null, env, toolkit.auth, this.resourceUriExtractor);
+      try { eventSink?.toolkitAuthSuccess?.({ toolkit: toolkit.namespace }); } catch {}
+      return result;
+    } catch (error) {
+      const reason = error instanceof MCPAuthError ? error.message : 'Authentication failed';
+      try { eventSink?.toolkitAuthFail?.({ toolkit: toolkit.namespace, reason }); } catch {}
+      throw error;
+    }
   }
 
   // Execute auth for multiple toolkits and return the first valid result

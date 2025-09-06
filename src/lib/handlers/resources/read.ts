@@ -50,7 +50,8 @@ async function authenticateToolkit(
       const authResult = await defaultAuthMiddlewareManager.executeToolkitAuth(
         toolkit, 
         mcpRequestWithHeaders, 
-        rpcContext?.env || null
+        rpcContext?.env || null,
+        rpcContext?.eventSink
       );
       if (!authResult) {
         throw new MCPAuthError('Authentication required', 401);
@@ -72,8 +73,14 @@ export const handleResourcesRead = async (
   rpcContext?: MCPRPCContext
 ): Promise<MCPResponse> => {
   const uri: string | undefined = (params as { uri?: string }).uri;
+  const sink = rpcContext?.eventSink;
+  
+  try { sink?.resourceReadStart?.({ id, uri }); } catch {}
+  
   if (!uri) {
-    return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected uri' } };
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected uri' } } as MCPResponse;
+    try { sink?.resourceReadFail?.({ id, uri, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
   }
 
   const providers: Array<MCPResourceProvider<unknown>> = toolkits.flatMap((tk) => tk.resources ?? []);
@@ -81,7 +88,9 @@ export const handleResourcesRead = async (
   if (provider) {
     const tk = toolkits.find((t) => (t.resources ?? []).includes(provider));
     if (!tk) {
-      return { jsonrpc: '2.0', id, error: { code: -32002, message: 'Resource provider not found' } };
+      const errorResp = { jsonrpc: '2.0', id, error: { code: -32002, message: 'Resource provider not found' } } as MCPResponse;
+      try { sink?.resourceReadFail?.({ id, uri, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+      return errorResp;
     }
     
     // Authenticate the toolkit that provides this resource
@@ -89,7 +98,9 @@ export const handleResourcesRead = async (
       await authenticateToolkit(tk, id, params, rpcContext);
     } catch (error) {
       if (error instanceof MCPAuthError) {
-        return { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } };
+        const errorResp = { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } } as MCPResponse;
+        try { sink?.resourceReadFail?.({ id, uri, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+        return errorResp;
       }
       throw error;
     }
@@ -97,6 +108,7 @@ export const handleResourcesRead = async (
     const context = await createContext(tk, contextInit);
     const resultPromise = provider.read(context);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
+    try { sink?.resourceReadSuccess?.({ id, uri }); } catch {}
     return { jsonrpc: '2.0', id, result };
   }
 
@@ -114,7 +126,9 @@ export const handleResourcesRead = async (
       await authenticateToolkit(tk, id, params, rpcContext);
     } catch (error) {
       if (error instanceof MCPAuthError) {
-        return { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } };
+        const errorResp = { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } } as MCPResponse;
+        try { sink?.resourceReadFail?.({ id, uri, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+        return errorResp;
       }
       throw error;
     }
@@ -123,10 +137,13 @@ export const handleResourcesRead = async (
     const mergedContext = Object.assign({}, context, { params: pathParams });
     const resultPromise = tpl.read(uri as ResourceUri, mergedContext);
     const result: MCPResourceReadResult = resultPromise instanceof Promise ? await resultPromise : resultPromise;
+    try { sink?.resourceReadSuccess?.({ id, uri }); } catch {}
     return { jsonrpc: '2.0', id, result };
   }
 
-  return { jsonrpc: '2.0', id, error: { code: -32002, message: 'Resource not found' } };
+  const errorResp = { jsonrpc: '2.0', id, error: { code: -32002, message: 'Resource not found' } } as MCPResponse;
+  try { sink?.resourceReadFail?.({ id, uri, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+  return errorResp;
 };
 
 

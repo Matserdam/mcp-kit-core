@@ -42,7 +42,8 @@ async function authenticateToolkit(
       const authResult = await defaultAuthMiddlewareManager.executeToolkitAuth(
         toolkit, 
         mcpRequestWithHeaders, 
-        rpcContext?.env || null
+        rpcContext?.env || null,
+        rpcContext?.eventSink
       );
       if (!authResult) {
         throw new MCPAuthError('Authentication required', 401);
@@ -62,31 +63,54 @@ export const handlePromptsGet = async (
   rpcContext?: MCPRPCContext
 ): Promise<MCPResponse> => {
   const { id, params } = request;
+  const sink = rpcContext?.eventSink;
   const name = (params as unknown as { name?: unknown })?.name as string | undefined;
-  if (!name) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected name' } };
+  
+  try { sink?.promptsGetStart?.({ id, name }); } catch {}
+  
+  if (!name) {
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected name' } } as MCPResponse;
+    try { sink?.promptsGetFail?.({ id, name, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
+  }
   const [ns, promptName] = name.includes('_') ? name.split('_', 2) : [undefined, undefined];
-  if (!ns || !promptName) return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid name: expected namespace_prompt' } };
+  if (!ns || !promptName) {
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid name: expected namespace_prompt' } } as MCPResponse;
+    try { sink?.promptsGetFail?.({ id, name, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
+  }
   const tk = toolkits.find((t) => t.namespace === ns);
-  if (!tk) return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Toolkit not found' } };
+  if (!tk) {
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32601, message: 'Toolkit not found' } } as MCPResponse;
+    try { sink?.promptsGetFail?.({ id, name, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
+  }
   
   // Authenticate the toolkit that provides this prompt
   try {
     await authenticateToolkit(tk, request, rpcContext);
   } catch (error) {
     if (error instanceof MCPAuthError) {
-      return { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } };
+      const errorResp = { jsonrpc: '2.0', id, error: { code: -32001, message: error.message } } as MCPResponse;
+      try { sink?.promptsGetFail?.({ id, name, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+      return errorResp;
     }
     throw error;
   }
   
   const prompt = tk.prompts?.find((p) => p.name === promptName);
-  if (!prompt) return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Prompt not found' } };
+  if (!prompt) {
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32601, message: 'Prompt not found' } } as MCPResponse;
+    try { sink?.promptsGetFail?.({ id, name, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
+  }
 
   const messages = await prompt.messages((params as unknown as { arguments?: Record<string, unknown> })?.arguments, tk?.createContext?.({ requestId: id }) ?? {} as unknown);
   const result: MCPPROMPTSGetResult = {
     description: prompt.description ?? '',
     messages
   };
+  try { sink?.promptsGetSuccess?.({ id, name }); } catch {}
   return { jsonrpc: '2.0', id, result };
 };
 

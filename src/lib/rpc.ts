@@ -36,17 +36,17 @@ export async function handleRPC(
     case 'prompts/get':
       return handlePromptsGet(request, toolkits, context);
     case 'prompts/list':
-      return handlePromptsList(id, toolkits);
+      return handlePromptsList(id, toolkits, sink);
     case 'resources/list':
-      return handleResourcesList(id, toolkits);
+      return handleResourcesList(id, toolkits, sink);
     case 'resources/read':
       return handleResourcesRead(id, params, toolkits, { requestId: id }, context);
     case 'resources/templates/list':
-      return handleResourceTemplatesList(id, toolkits);
+      return handleResourceTemplatesList(id, toolkits, sink);
     case 'tools/call':
       return handleToolCall(request, toolkits, context);
     case 'tools/list':
-      return handleToolsList(id, toolkits);
+      return handleToolsList(id, toolkits, sink);
     default:
       const errorResp = {
         jsonrpc: '2.0',

@@ -12,33 +12,66 @@ export const handleToolCall = async (
   context?: MCPRPCContext
 ): Promise<MCPResponse> => {
   const { id, params } = request;
+  const sink = context?.eventSink;
 
   if (!params) {
-    return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } };
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32601, message: 'Params missing' } } as MCPResponse;
+    try { sink?.toolCallFail?.({ id, name: 'unknown', code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
   }
 
   // Type guard to ensure this is a tools/call request
   if (request.method !== 'tools/call') {
-    return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Invalid method for tools/call handler' } };
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32601, message: 'Invalid method for tools/call handler' } } as MCPResponse;
+    try { sink?.toolCallFail?.({ id, name: 'unknown', code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
   }
 
   const toolName: string = (params as MCPToolsCallParams).name ?? '';
+  try { sink?.toolCallStart?.({ id, name: toolName }); } catch {}
 
-  switch (toolName) {
-    case 'search':
-      {
-        const v = canonicalSearchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
-        if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
-      }
-      return runSearch(id, params as MCPToolsCallParams, toolkits, context);
-    case 'fetch':
-      {
-        const v = canonicalFetchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
-        if (!v.success) return { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } };
-      }
-      return runFetch(id, params as MCPToolsCallParams, toolkits, context);
-    default:
-      return runToolkitTool(id, params as MCPToolsCallParams, toolkits, context);
+  try {
+    let result: MCPResponse;
+    
+    switch (toolName) {
+      case 'search':
+        {
+          const v = canonicalSearchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
+          if (!v.success) {
+            const errorResp = { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } } as MCPResponse;
+            try { sink?.toolCallFail?.({ id, name: toolName, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+            return errorResp;
+          }
+        }
+        result = await runSearch(id, params as MCPToolsCallParams, toolkits, context);
+        break;
+      case 'fetch':
+        {
+          const v = canonicalFetchInputSchema.safeParse((params as MCPToolsCallParams).arguments);
+          if (!v.success) {
+            const errorResp = { jsonrpc: '2.0', id, error: { code: -32602, message: v.error.message } } as MCPResponse;
+            try { sink?.toolCallFail?.({ id, name: toolName, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+            return errorResp;
+          }
+        }
+        result = await runFetch(id, params as MCPToolsCallParams, toolkits, context);
+        break;
+      default:
+        result = await runToolkitTool(id, params as MCPToolsCallParams, toolkits, context);
+        break;
+    }
+
+    if ('error' in result && result.error) {
+      try { sink?.toolCallFail?.({ id, name: toolName, code: result.error.code, message: result.error.message }); } catch {}
+    } else {
+      try { sink?.toolCallSuccess?.({ id, name: toolName }); } catch {}
+    }
+    
+    return result;
+  } catch (error) {
+    const errorResp = { jsonrpc: '2.0', id, error: { code: -32603, message: error instanceof Error ? error.message : 'Internal error' } } as MCPResponse;
+    try { sink?.toolCallFail?.({ id, name: toolName, code: errorResp.error!.code, message: errorResp.error!.message }); } catch {}
+    return errorResp;
   }
 };
 

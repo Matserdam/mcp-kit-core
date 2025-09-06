@@ -1,10 +1,14 @@
 import type { MCPResponse, MCPPROMPTSListResult } from '../../../types/server';
 import type { MCPToolkit, MCPPromptDef } from '../../../types/toolkit';
+import type { EventSink } from '../../../types/observability';
 
 export const handlePromptsList = (
   id: string | number | null,
-  toolkits: MCPToolkit<unknown, unknown>[]
+  toolkits: MCPToolkit<unknown, unknown>[],
+  eventSink?: EventSink
 ): MCPResponse => {
+  try { eventSink?.promptsListStart?.({ id }); } catch {}
+  
   const prompts = toolkits.flatMap((toolkit) =>
     (toolkit.prompts ?? []).map((prompt: MCPPromptDef<unknown, unknown>) => ({
       name: `${toolkit.namespace}_${prompt.name}`,
@@ -15,6 +19,7 @@ export const handlePromptsList = (
   );
 
   const result: MCPPROMPTSListResult = { prompts };
+  try { eventSink?.promptsListSuccess?.({ id, count: prompts.length }); } catch {}
   return { jsonrpc: '2.0', id, result };
 };
 
