@@ -522,3 +522,4 @@ curl -sS http://localhost:3000/.well-known/oauth-protected-resource | jq .
 - For SSE responses, set `Accept: text/event-stream`.
 - Canonical `search` and `fetch` appear in `tools/list` automatically.
 
+
