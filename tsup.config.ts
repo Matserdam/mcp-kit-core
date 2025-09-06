@@ -16,7 +16,7 @@ export default defineConfig([
   // Edge/Deno build (excludes stdio)
   {
     // Name the entry chunk explicitly so output is dist/index.edge.js
-    entry: { 'index.edge': 'src/index.edge.ts' },
+    entry: { 'mod': 'src/mod.ts' },
     format: ['esm'],
     dts: true,
     clean: false, // Don't clean since we're building multiple configs
