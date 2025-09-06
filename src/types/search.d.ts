@@ -2,7 +2,7 @@ export interface MCPSearchInput {
   query: string;
   topK?: number;
   site?: string;
-  timeRange?: 'day' | 'week' | 'month' | 'year';
+  timeRange?: "day" | "week" | "month" | "year";
 }
 
 export interface MCPSearchResultItem {
@@ -14,5 +14,3 @@ export interface MCPSearchResultItem {
 export interface MCPSearchOutput {
   results: MCPSearchResultItem[];
 }
-
-

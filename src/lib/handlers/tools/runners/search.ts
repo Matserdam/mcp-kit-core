@@ -1,13 +1,22 @@
-import type { MCPResponse, MCPToolsCallParams, MCPToolCallResult, MCPRequest } from '../../../../types/server.d.ts';
-import type { MCPToolkit, MCPResourceProvider, MCPResourceTemplateProvider } from '../../../../types/toolkit.d.ts';
-import type { MCPRPCContext } from '../../../../lib/rpc.ts';
-import type { MCPRequestWithHeaders } from '../../../../types/auth.d.ts';
-import { defaultAuthMiddlewareManager } from '../../../../lib/auth/middleware.ts';
+import type {
+  MCPRequest,
+  MCPResponse,
+  MCPToolCallResult,
+  MCPToolsCallParams,
+} from "../../../../types/server.d.ts";
+import type {
+  MCPResourceProvider,
+  MCPResourceTemplateProvider,
+  MCPToolkit,
+} from "../../../../types/toolkit.d.ts";
+import type { MCPRPCContext } from "../../../../lib/rpc.ts";
+import type { MCPRequestWithHeaders } from "../../../../types/auth.d.ts";
+import { defaultAuthMiddlewareManager } from "../../../../lib/auth/middleware.ts";
 
 // Helper function to convert HTTP request to MCPRequestWithHeaders
 function createMCPRequestWithHeaders(
-  mcpRequest: MCPRequest, 
-  httpRequest?: Request
+  mcpRequest: MCPRequest,
+  httpRequest?: Request,
 ): MCPRequestWithHeaders | null {
   if (!httpRequest) {
     return null;
@@ -21,7 +30,7 @@ function createMCPRequestWithHeaders(
 
   return {
     ...mcpRequest,
-    headers
+    headers,
   };
 }
 
@@ -29,7 +38,7 @@ function createMCPRequestWithHeaders(
 async function isToolkitAccessible(
   toolkit: MCPToolkit<unknown, unknown>,
   id: string | number | null,
-  rpcContext?: MCPRPCContext
+  rpcContext?: MCPRPCContext,
 ): Promise<boolean> {
   if (!toolkit.auth) {
     return true; // No auth required
@@ -37,17 +46,17 @@ async function isToolkitAccessible(
 
   try {
     const mcpRequestWithHeaders = createMCPRequestWithHeaders(
-      { id, method: 'tools/call', params: { name: 'search' } } as MCPRequest,
-      rpcContext?.httpRequest
+      { id, method: "tools/call", params: { name: "search" } } as MCPRequest,
+      rpcContext?.httpRequest,
     );
-    
+
     const authResult = await defaultAuthMiddlewareManager.executeToolkitAuth(
-      toolkit, 
-      mcpRequestWithHeaders, 
-      rpcContext?.env || null
+      toolkit,
+      mcpRequestWithHeaders,
+      rpcContext?.env || null,
     );
     return authResult !== null;
-  } catch (error) {
+  } catch (_error) {
     // Auth failed, exclude this toolkit
     return false;
   }
@@ -57,17 +66,25 @@ export const runSearch = async (
   id: string | number | null,
   params: MCPToolsCallParams,
   toolkits: MCPToolkit<unknown, unknown>[],
-  rpcContext?: MCPRPCContext
+  rpcContext?: MCPRPCContext,
 ): Promise<MCPResponse> => {
   const args: unknown = params.arguments ?? {};
-  const argsObj = (typeof args === 'object' && args !== null) ? args as Record<string, unknown> : {};
+  const argsObj = (typeof args === "object" && args !== null)
+    ? args as Record<string, unknown>
+    : {};
   const queryUnknown = argsObj.query;
-  const topK: number | undefined = typeof argsObj.topK === 'number' ? argsObj.topK : undefined;
+  const topK: number | undefined = typeof argsObj.topK === "number" ? argsObj.topK : undefined;
   const siteRaw = argsObj.site;
-  const site: string | undefined = typeof siteRaw === 'string' && siteRaw.length > 0 ? siteRaw : undefined;
+  const site: string | undefined = typeof siteRaw === "string" && siteRaw.length > 0
+    ? siteRaw
+    : undefined;
 
-  if (typeof queryUnknown !== 'string' || queryUnknown.length === 0) {
-    return { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params: expected { query: string }' } };
+  if (typeof queryUnknown !== "string" || queryUnknown.length === 0) {
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: { code: -32602, message: "Invalid params: expected { query: string }" },
+    };
   }
 
   const queryLower = queryUnknown.toLowerCase();
@@ -96,7 +113,9 @@ export const runSearch = async (
     if (isAccessible) {
       // Add resources from this toolkit
       if (toolkit.resources) {
-        const toolkitResources = toolkit.resources.map((provider: MCPResourceProvider<unknown>) => ({
+        const toolkitResources = toolkit.resources.map((
+          provider: MCPResourceProvider<unknown>,
+        ) => ({
           uri: provider.uri,
           name: provider.name,
           title: provider.title,
@@ -109,7 +128,9 @@ export const runSearch = async (
 
       // Add resource templates from this toolkit
       if (toolkit.resourceTemplates) {
-        const toolkitTemplates = toolkit.resourceTemplates.map((tpl: MCPResourceTemplateProvider<unknown>) => ({
+        const toolkitTemplates = toolkit.resourceTemplates.map((
+          tpl: MCPResourceTemplateProvider<unknown>,
+        ) => ({
           uriTemplate: tpl.descriptor.uriTemplate,
           name: tpl.descriptor.name,
           title: tpl.descriptor.title,
@@ -132,19 +153,29 @@ export const runSearch = async (
     }
   };
 
-  const filteredResources = resources.filter((r) => (
-    textMatches(r.name) || textMatches(r.title) || textMatches(r.description) || textMatches(r.uri)
-  ) && hostMatches(r.uri));
+  const filteredResources = resources.filter((r) =>
+    (
+      textMatches(r.name) || textMatches(r.title) || textMatches(r.description) ||
+      textMatches(r.uri)
+    ) && hostMatches(r.uri)
+  );
 
   const filteredTemplates = templates.filter((t) => (
-    textMatches(t.name) || textMatches(t.title) || textMatches(t.description) || textMatches(t.uriTemplate)
+    textMatches(t.name) || textMatches(t.title) || textMatches(t.description) ||
+    textMatches(t.uriTemplate)
   ));
 
-  const limitedResources = typeof topK === 'number' && topK > 0 ? filteredResources.slice(0, topK) : filteredResources;
+  const limitedResources = typeof topK === "number" && topK > 0
+    ? filteredResources.slice(0, topK)
+    : filteredResources;
 
   const lines: string[] = [];
   lines.push(`Search: "${queryUnknown}"`);
-  lines.push(`Resources matched: ${filteredResources.length}${typeof topK === 'number' ? ` (showing ${limitedResources.length})` : ''}`);
+  lines.push(
+    `Resources matched: ${filteredResources.length}${
+      typeof topK === "number" ? ` (showing ${limitedResources.length})` : ""
+    }`,
+  );
   for (const r of limitedResources) {
     const display = r.name || r.title || r.uri;
     lines.push(`- ${display} -> ${r.uri}`);
@@ -155,22 +186,24 @@ export const runSearch = async (
     lines.push(`- ${display} :: ${t.uriTemplate}`);
   }
 
-  const content: MCPToolCallResult['content'] = [
-    { type: 'text', text: lines.join('\n') }
+  const content: MCPToolCallResult["content"] = [
+    { type: "text", text: lines.join("\n") },
   ];
   for (const r of limitedResources) {
     const display = r.name || r.title || r.uri;
-    content.push({ type: 'resource_link', name: display, uri: r.uri });
+    content.push({ type: "resource_link", name: display, uri: r.uri });
   }
 
   const structuredContent = {
-    results: limitedResources.map((r) => ({ title: r.title || r.name || r.uri, url: r.uri, snippet: r.description })),
+    results: limitedResources.map((r) => ({
+      title: r.title || r.name || r.uri,
+      url: r.uri,
+      snippet: r.description,
+    })),
     templates: filteredTemplates,
     total: { resources: filteredResources.length, templates: filteredTemplates.length },
   };
 
   const result: MCPToolCallResult = { content, structuredContent };
-  return { jsonrpc: '2.0', id, result };
+  return { jsonrpc: "2.0", id, result };
 };
-
-

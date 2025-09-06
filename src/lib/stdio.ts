@@ -1,8 +1,10 @@
-import type { MCPRequest, MCPResponse } from '../types/server.d.ts';
-import type { MCPStdioOptions, MCPStdioController } from '../types/stdio.d.ts';
-import { handleRPC } from './rpc';
-import type { MCPToolkit } from '../types/toolkit.d.ts';
-import { createAuthContext, defaultAuthMiddlewareManager } from './auth';
+import type { MCPRequest, MCPResponse } from "../types/server.d.ts";
+import type { MCPStdioController, MCPStdioOptions } from "../types/stdio.d.ts";
+import { handleRPC } from "./rpc";
+import type { MCPToolkit } from "../types/toolkit.d.ts";
+import { createAuthContext, defaultAuthMiddlewareManager } from "./auth";
+import process from "node:process";
+import { Buffer } from "node:buffer";
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -28,8 +30,8 @@ export class StdioController implements MCPStdioController {
    */
   constructor(
     private readonly toolkits: MCPToolkit<unknown, unknown>[],
-    private readonly options: MCPStdioOptions = {}
-  ) { }
+    private readonly options: MCPStdioOptions = {},
+  ) {}
 
   /** Whether the stdio loop is running. */
   get isRunning(): boolean {
@@ -51,11 +53,13 @@ export class StdioController implements MCPStdioController {
         // Bridge NodeJS.ReadStream → Web ReadableStream
         start(controller) {
           const nodeIn = input as NodeJS.ReadStream;
-          nodeIn.on('data', (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
-          nodeIn.on('end', () => {
-            try { controller.close(); } catch { /* ignore double close */ }
+          nodeIn.on("data", (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
+          nodeIn.on("end", () => {
+            try {
+              controller.close();
+            } catch { /* ignore double close */ }
           });
-          nodeIn.on('error', (err: unknown) => controller.error(err));
+          nodeIn.on("error", (err: unknown) => controller.error(err));
         },
       });
 
@@ -75,21 +79,25 @@ export class StdioController implements MCPStdioController {
     this.running = true;
 
     // Optional signal handlers for graceful shutdown (Node/Bun)
-    if (this.options.enableSignalHandlers !== false && typeof process !== 'undefined' && process.on) {
+    if (
+      this.options.enableSignalHandlers !== false && typeof process !== "undefined" && process.on
+    ) {
       if (!this.signalHandlersInstalled) {
-        const stop = () => { void this.stop(); };
-        process.on('SIGINT', stop);
-        process.on('SIGTERM', stop);
+        const stop = () => {
+          void this.stop();
+        };
+        process.on("SIGINT", stop);
+        process.on("SIGTERM", stop);
         this.signalHandlersInstalled = true;
       }
     }
 
     // Start reader loop (no await to avoid blocking)
     void this.readLoop();
-  }
+  };
 
   /** Stop the loops and close streams. Idempotent. */
-  stop = async(): Promise<void> => {
+  stop = async (): Promise<void> => {
     this.running = false;
     if (this.reader) {
       try {
@@ -107,7 +115,7 @@ export class StdioController implements MCPStdioController {
       }
       this.writer = undefined;
     }
-  }
+  };
 
   /** Queue a JSON-RPC notification to the output. Returns false if not running. */
   notify = (method: string, params?: Record<string, unknown>): boolean => {
@@ -116,15 +124,15 @@ export class StdioController implements MCPStdioController {
     // We serialize a JSON-RPC notification envelope on the wire (id = null, method, params).
     // The transport layer treats this like a request for framing purposes.
     const notification = {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: null,
       method,
       params,
     } as const;
 
-    void this.queueWrite(textEncoder.encode(JSON.stringify(notification) + '\n'));
+    void this.queueWrite(textEncoder.encode(JSON.stringify(notification) + "\n"));
     return true;
-  }
+  };
 
   /**
    * Reader loop that accumulates bytes and parses NDJSON lines robustly.
@@ -133,7 +141,7 @@ export class StdioController implements MCPStdioController {
   private readLoop = async (): Promise<void> => {
     if (!this.reader) return;
 
-    let bufferedText = '';
+    let bufferedText = "";
     try {
       while (this.running) {
         const { done, value } = await this.reader.read();
@@ -144,46 +152,57 @@ export class StdioController implements MCPStdioController {
         bufferedText += textDecoder.decode(value, { stream: true });
         let newlineIndex: number;
         // Process complete lines; keep the last partial line in buffer
-        while ((newlineIndex = bufferedText.indexOf('\n')) !== -1) {
+        while ((newlineIndex = bufferedText.indexOf("\n")) !== -1) {
           const line = bufferedText.slice(0, newlineIndex);
           bufferedText = bufferedText.slice(newlineIndex + 1);
           if (!line.trim()) continue;
 
           try {
             const request = JSON.parse(line) as MCPRequest;
-            
+
             // Execute auth middleware if required
             try {
-              const authContext = await createAuthContext(request, process.env, this.toolkits, defaultAuthMiddlewareManager);
+              const env = Object.fromEntries(
+                Object.entries(process.env).filter(([, value]) => value !== undefined),
+              ) as Record<string, string>;
+              const authContext = await createAuthContext(
+                request,
+                env,
+                this.toolkits,
+                defaultAuthMiddlewareManager,
+              );
               if (!authContext.authenticated) {
                 const authErrorResponse: MCPResponse = {
-                  jsonrpc: '2.0',
+                  jsonrpc: "2.0",
                   id: request.id,
-                  error: { code: -32001, message: 'Authentication required' },
+                  error: { code: -32001, message: "Authentication required" },
                 };
-                void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+                void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + "\n"));
                 continue;
               }
             } catch (error) {
               // Handle auth errors
               const authErrorResponse: MCPResponse = {
-                jsonrpc: '2.0',
+                jsonrpc: "2.0",
                 id: request.id,
-                error: { code: -32001, message: error instanceof Error ? error.message : 'Authentication error' },
+                error: {
+                  code: -32001,
+                  message: error instanceof Error ? error.message : "Authentication error",
+                },
               };
-              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + "\n"));
               continue;
             }
-            
+
             const response = await handleRPC(request, this.toolkits);
-            void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
+            void this.queueWrite(textEncoder.encode(JSON.stringify(response) + "\n"));
           } catch {
             const errorResponse: MCPResponse = {
-              jsonrpc: '2.0',
+              jsonrpc: "2.0",
               id: null,
-              error: { code: -32700, message: 'Parse error' },
+              error: { code: -32700, message: "Parse error" },
             };
-            void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
+            void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + "\n"));
           }
         }
       }
@@ -192,46 +211,57 @@ export class StdioController implements MCPStdioController {
       if (bufferedText.trim().length > 0) {
         try {
           const request = JSON.parse(bufferedText) as MCPRequest;
-          
+
           // Execute auth middleware if required
           try {
-            const authContext = await createAuthContext(request, process.env, this.toolkits, defaultAuthMiddlewareManager);
+            const env = Object.fromEntries(
+              Object.entries(process.env).filter(([, value]) => value !== undefined),
+            ) as Record<string, string>;
+            const authContext = await createAuthContext(
+              request,
+              env,
+              this.toolkits,
+              defaultAuthMiddlewareManager,
+            );
             if (!authContext.authenticated) {
               const authErrorResponse: MCPResponse = {
-                jsonrpc: '2.0',
+                jsonrpc: "2.0",
                 id: request.id,
-                error: { code: -32001, message: 'Authentication required' },
+                error: { code: -32001, message: "Authentication required" },
               };
-              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+              void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + "\n"));
               return;
             }
           } catch (error) {
             // Handle auth errors
             const authErrorResponse: MCPResponse = {
-              jsonrpc: '2.0',
+              jsonrpc: "2.0",
               id: request.id,
-              error: { code: -32001, message: error instanceof Error ? error.message : 'Authentication error' },
+              error: {
+                code: -32001,
+                message: error instanceof Error ? error.message : "Authentication error",
+              },
             };
-            void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + '\n'));
+            void this.queueWrite(textEncoder.encode(JSON.stringify(authErrorResponse) + "\n"));
             return;
           }
-          
+
           const response = await handleRPC(request, this.toolkits);
-          void this.queueWrite(textEncoder.encode(JSON.stringify(response) + '\n'));
+          void this.queueWrite(textEncoder.encode(JSON.stringify(response) + "\n"));
         } catch {
           const errorResponse: MCPResponse = {
-            jsonrpc: '2.0',
+            jsonrpc: "2.0",
             id: null,
-            error: { code: -32700, message: 'Parse error' },
+            error: { code: -32700, message: "Parse error" },
           };
-          void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + '\n'));
+          void this.queueWrite(textEncoder.encode(JSON.stringify(errorResponse) + "\n"));
         }
       }
     } catch {
       // Reader error - stop the loop
       this.running = false;
     }
-  }
+  };
 
   /** Enqueue data to be written, starting the writer loop if idle. */
   private queueWrite = async (data: Uint8Array): Promise<void> => {
@@ -241,7 +271,7 @@ export class StdioController implements MCPStdioController {
     if (!this.writing) {
       await this.writeLoop();
     }
-  }
+  };
 
   /** Write loop that respects backpressure by awaiting writer.write(). */
   private writeLoop = async (): Promise<void> => {
@@ -256,5 +286,5 @@ export class StdioController implements MCPStdioController {
     } finally {
       this.writing = false;
     }
-  }
+  };
 }

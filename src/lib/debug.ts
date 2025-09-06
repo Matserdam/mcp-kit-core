@@ -3,7 +3,7 @@
  * Replaces console usage with proper debug namespacing
  */
 
-import debug from 'debug';
+import debug from "debug";
 
 /**
  * Create a namespaced debug logger with mcp-kit as the base namespace
@@ -16,12 +16,12 @@ export function createDebugLogger(subNamespace: string) {
  * Pre-configured debug loggers for common namespaces
  */
 export const debugLoggers = {
-  auth: createDebugLogger('auth'),
-  server: createDebugLogger('server'),
-  discovery: createDebugLogger('discovery'),
-  audit: createDebugLogger('audit'),
-  rpc: createDebugLogger('rpc'),
-  stdio: createDebugLogger('stdio')
+  auth: createDebugLogger("auth"),
+  server: createDebugLogger("server"),
+  discovery: createDebugLogger("discovery"),
+  audit: createDebugLogger("audit"),
+  rpc: createDebugLogger("rpc"),
+  stdio: createDebugLogger("stdio"),
 };
 
 // Export the main debug function for backward compatibility

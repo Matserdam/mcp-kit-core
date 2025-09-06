@@ -1,18 +1,20 @@
-import type { MCPResponse } from '../../types/server.d.ts';
+import type { MCPResponse } from "../../types/server.d.ts";
 
 export function handleInitialize(id: string | number | null, params: unknown): MCPResponse {
   const requestedProtocol = (params as { protocolVersion?: unknown })?.protocolVersion;
-  const protocolVersion = typeof requestedProtocol === 'string' && requestedProtocol.length > 0
+  const protocolVersion = typeof requestedProtocol === "string" && requestedProtocol.length > 0
     ? requestedProtocol
-    : '2025-06-18';
+    : "2025-06-18";
 
   const result = {
     protocolVersion,
-    serverInfo: { name: 'mcp-kit', version: '0.0.1' },
-    capabilities: { tools: { listChanged: true }, prompts: { listChanged: false }, resources: { listChanged: false } },
+    serverInfo: { name: "mcp-kit", version: "0.0.1" },
+    capabilities: {
+      tools: { listChanged: true },
+      prompts: { listChanged: false },
+      resources: { listChanged: false },
+    },
   };
 
-  return { jsonrpc: '2.0', id, result };
+  return { jsonrpc: "2.0", id, result };
 }
-
-

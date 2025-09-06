@@ -6,5 +6,3 @@
   },
   "include": ["src", "tests", "docs/specs/abstract-schema.md", "compliance"]
 }
-
-

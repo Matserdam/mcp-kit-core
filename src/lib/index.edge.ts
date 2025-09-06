@@ -1,10 +1,10 @@
-import type { MCPServerOptions } from '../types/server.d.ts';
-import type { EventSink } from '../types/observability.d.ts';
-import { NoopEventSink } from './observability/event-sink.ts';
-import type { MCPToolkit } from '../types/toolkit.d.ts';
-import type { MCPDiscoveryConfig } from '../types/auth.d.ts';
-import { MCPDiscoveryHandler, createDiscoveryResponse } from './auth/discovery.ts';
-import { validateDiscoveryConfig, handleFetchRequest } from './server/helpers.ts';
+import type { MCPServerOptions } from "../types/server.d.ts";
+import type { EventSink } from "../types/observability.d.ts";
+import { NoopEventSink } from "./observability/event-sink.ts";
+import type { MCPToolkit } from "../types/toolkit.d.ts";
+import type { MCPDiscoveryConfig } from "../types/auth.d.ts";
+import { createDiscoveryResponse, MCPDiscoveryHandler } from "./auth/discovery.ts";
+import { handleFetchRequest, validateDiscoveryConfig } from "./server/helpers.ts";
 
 export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
@@ -16,7 +16,7 @@ export class MCPServer {
     this.toolkits = options.toolkits;
     this.options = options;
     this.eventSink = options.eventSink ?? new NoopEventSink();
-    
+
     if (options.discovery) {
       // Validate discovery configuration
       this.validateDiscoveryConfig(options.discovery);
@@ -33,24 +33,26 @@ export class MCPServer {
 
   fetch = async (request: Request): Promise<Response> => {
     const resolveDiscovery = async (url: URL): Promise<Response | null> => {
-      if (!this.discoveryHandler || this.options.discovery?.enableDiscoveryEndpoints === false) return null;
-      if (url.pathname === '/.well-known/oauth-authorization-server') {
+      if (!this.discoveryHandler || this.options.discovery?.enableDiscoveryEndpoints === false) {
+        return null;
+      }
+      if (url.pathname === "/.well-known/oauth-authorization-server") {
         const metadata = await this.discoveryHandler.getAuthorizationServerMetadata();
         return createDiscoveryResponse(metadata);
       }
-      if (url.pathname === '/.well-known/oauth-protected-resource') {
+      if (url.pathname === "/.well-known/oauth-protected-resource") {
         const metadata = await this.discoveryHandler.getProtectedResourceMetadata();
         return createDiscoveryResponse(metadata);
       }
       return null;
     };
-    return handleFetchRequest({
+    return await handleFetchRequest({
       request,
       toolkits: this.toolkits,
       discovery: this.options.discovery,
       eventSink: this.eventSink,
       resolveDiscovery,
-      discoveryHandler: this.discoveryHandler
+      discoveryHandler: this.discoveryHandler,
     });
   };
 

@@ -1,6 +1,6 @@
 {
   "name": "@mcp-kit/core",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Lightweight TypeScript Model Context Protocol (MCP) server package",
   "repository": "https://github.com/Matserdam/mcp-kit-core",
   "license": "MIT",
@@ -22,10 +22,11 @@
       "node_modules/",
       ".git/",
       ".github/",
-      "dist/"
+      "dist/",
+      "scripts/"
     ]
   },
-  
+
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,
