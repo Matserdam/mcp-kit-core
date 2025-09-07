@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MCPPromptDef, MCPServer } from "../src/index";
+import { MCPPromptDef, MCPServer } from "../src/index.ts";
 import z from "zod";
 
 const jsonrpc = async (server: MCPServer, body: Record<string, unknown>) => {

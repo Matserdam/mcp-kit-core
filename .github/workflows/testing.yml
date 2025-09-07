@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
-        with: 
+        with:
           deno-version: v1.x
 
       - name: Deno type check
@@ -96,4 +96,3 @@ jobs:
 
       - name: Compliance check (Bun)
         run: bun compliance/compliance-check.ts
-

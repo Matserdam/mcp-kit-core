@@ -34,4 +34,3 @@ jobs:
 
       - name: Publish to JSR (requires repo linked in JSR settings)
         run: deno publish
-

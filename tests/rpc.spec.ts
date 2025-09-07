@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { handleRPC } from "../src/lib/rpc";
-import type { MCPRequest, MCPResponse, MCPTool, MCPToolkit } from "../src/index";
+import { handleRPC } from "../src/lib/rpc.ts";
+import type { MCPRequest, MCPResponse, MCPTool, MCPToolkit } from "../src/index.ts";
 import { z } from "zod";
 
 describe("handleRPC", () => {

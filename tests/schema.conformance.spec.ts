@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { handleRPC } from "../src/lib/rpc";
-import type { MCPRequest, MCPTool, MCPToolkit } from "../src";
+import { handleRPC } from "../src/lib/rpc.ts";
+import type { MCPRequest, MCPTool, MCPToolkit } from "../src/index.ts";
 
 // Minimal JSON-RPC response envelope per MCP schema (2025-06-18)
 const zJSONRPCResponse = z.object({
