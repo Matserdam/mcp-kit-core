@@ -11,7 +11,7 @@
 
 ### Docs
 
-- README: added MCP protocol coverage table 
+- README: added MCP protocol coverage table
 
 ## 0.0.4
 

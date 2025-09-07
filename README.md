@@ -14,31 +14,30 @@ Lightweight, production-ready MCP server toolkit for modern runtimes. Build tool
 
 The table below summarizes which parts of the official MCP spec (2025-06-18) this kit implements.
 
-| Status | Description | |
-| --- | --- | --- |
-| ✅ | JSON-RPC 2.0 envelope | Server |
-| ✅ | initialize | Server |
-| ✅ | ping | Server |
-| ✅ | Tools: tools/list | Server |
-| ✅ | Tools: tools/call | Server |
-| ✅ | Prompts: prompts/list | Server |
-| ✅ | Prompts: prompts/get | Server |
-| ✅ | Resources: resources/list | Server |
-| ✅ | Resources: resources/read | Server |
-| ✅ | Resources: resources/templates/list | Server |
-| ✅ | Canonical tools: search | Server |
-| ✅ | Canonical tools: fetch | Server |
-| ✅ | HTTP transport (fetch) | Server |
-| ✅ | STDIO transport | Server |
-| ✅ | Auth (HTTP OAuth 2.1) | Server |
-| ✅ | Auth (STDIO env) | Server |
-| ✅ | OAuth 2.1 discovery | Server |
-| ✅ | Event sink/observability | Server |
-| ⬜️ | Streaming tool outputs | Server |
-| ⬜️ | Search/list roots | Client |
-| ⬜️ | Messages API | Client |
-| ⬜️ | Sampling / model / session | Client |
-
+| Status | Description                         |        |
+| ------ | ----------------------------------- | ------ |
+| ✅     | JSON-RPC 2.0 envelope               | Server |
+| ✅     | initialize                          | Server |
+| ✅     | ping                                | Server |
+| ✅     | Tools: tools/list                   | Server |
+| ✅     | Tools: tools/call                   | Server |
+| ✅     | Prompts: prompts/list               | Server |
+| ✅     | Prompts: prompts/get                | Server |
+| ✅     | Resources: resources/list           | Server |
+| ✅     | Resources: resources/read           | Server |
+| ✅     | Resources: resources/templates/list | Server |
+| ✅     | Canonical tools: search             | Server |
+| ✅     | Canonical tools: fetch              | Server |
+| ✅     | HTTP transport (fetch)              | Server |
+| ✅     | STDIO transport                     | Server |
+| ✅     | Auth (HTTP OAuth 2.1)               | Server |
+| ✅     | Auth (STDIO env)                    | Server |
+| ✅     | OAuth 2.1 discovery                 | Server |
+| ✅     | Event sink/observability            | Server |
+| ⬜️     | Streaming tool outputs              | Server |
+| ⬜️     | Search/list roots                   | Client |
+| ⬜️     | Messages API                        | Client |
+| ⬜️     | Sampling / model / session          | Client |
 
 ## Install
 
@@ -196,4 +195,3 @@ MIT
   <img src="./assets/matserdam_avatar.png" alt="Matserdam Logo" width="140"/>
   <br/>
 </p>
-
