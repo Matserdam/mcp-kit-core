@@ -5,6 +5,11 @@ import type {
   MCPResourceTemplateProviderInit,
 } from "../../types/toolkit.d.ts";
 
+/**
+ * Create a simple read-only resource provider.
+ *
+ * Use this to expose a single resource via `resources/read`.
+ */
 export function createMCPResourceProvider<TContext = unknown>(
   init: MCPResourceProviderInit<TContext>,
 ): MCPResourceProvider<TContext> {
@@ -19,6 +24,11 @@ export function createMCPResourceProvider<TContext = unknown>(
   };
 }
 
+/**
+ * Create a resource template provider.
+ *
+ * Use this to expose resources by URI template (dynamic resources).
+ */
 export function createMCPResourceTemplateProvider<TContext = unknown>(
   init: MCPResourceTemplateProviderInit<TContext>,
 ): MCPResourceTemplateProvider<TContext> {

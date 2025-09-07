@@ -2,6 +2,7 @@ import type { ZodTypeAny } from "zod";
 import type { MCPResourceReadResult, MCPToolCallResult, ResourceUri } from "./server.d.ts";
 import type { MCPHTTPAuthMiddleware, MCPSTDIOAuthMiddleware } from "./auth.d.ts";
 
+/** Minimal JSON Schema shape for tool input/output definitions. */
 export type MCPJSONSchema = {
   $id?: string;
   $schema?: string;
@@ -28,12 +29,17 @@ export type MCPJSONSchema = {
   oneOf?: MCPJSONSchema[];
   not?: MCPJSONSchema;
 };
+/** Wrapper allowing either Zod schema or plain JSON Schema. */
 export type MCPSchemaDef = { zod?: ZodTypeAny; jsonSchema?: MCPJSONSchema };
 
+/** Initialization options provided to toolkit `createContext`. */
 export interface MCPToolkitInit {
   requestId?: string | number | null;
 }
 
+/**
+ * A single callable tool within a toolkit.
+ */
 export interface MCPTool<TContext = unknown, TInput = unknown> {
   name: string;
   description?: string;
@@ -42,20 +48,24 @@ export interface MCPTool<TContext = unknown, TInput = unknown> {
   run(input: TInput, context: TContext): Promise<MCPToolCallResult> | MCPToolCallResult;
 }
 
+/** Function signature used by tool middleware to wrap execution. */
 export type MCPToolRunner<TContext = unknown> = (
   input: unknown,
   context: TContext,
 ) => Promise<unknown>;
 
+/** Middleware factory for tools, used to add cross-cutting behaviors. */
 export type MCPToolMiddleware<TContext = unknown> = (
   next: MCPToolRunner<TContext>,
   info: { toolkit: MCPToolkit<TContext, unknown>; tool: MCPTool<TContext, unknown> },
 ) => MCPToolRunner<TContext>;
 
+/** Container for toolkit-level middleware. */
 export interface MCPToolkitMiddleware<TContext = unknown> {
   tools?: Array<MCPToolMiddleware<TContext>>;
 }
 
+/** Prompt definition used by `prompts/list` and `prompts/get`. */
 export interface MCPPromptDef<TContext = unknown, TInput = unknown> {
   name: string;
   title: string;
@@ -65,14 +75,17 @@ export interface MCPPromptDef<TContext = unknown, TInput = unknown> {
   messages(input: TInput, context: TContext): Promise<MCPPromptCallMessagesResult>;
 }
 
+/** Resulting message array for prompt calls. */
 export type MCPPromptCallMessagesResult = Array<MCPMessage>;
 
+/** Simple text-only message used in prompts. */
 export type MCPMessage = {
   role: "user" | "assistant" | "system";
   content: { type: "text"; text: string };
 };
 
 // Resource provider: single, read-only resource exposure (MVP)
+/** Provider for a single, read-only resource. */
 export interface MCPResourceProvider<TContext = unknown> {
   uri: ResourceUri;
   name: string;
@@ -83,6 +96,7 @@ export interface MCPResourceProvider<TContext = unknown> {
   read(context: TContext): Promise<MCPResourceReadResult> | MCPResourceReadResult;
 }
 
+/** Initialization input used to create a resource provider. */
 export type MCPResourceProviderInit<TContext = unknown> = {
   uri: ResourceUri;
   name: string;
@@ -94,7 +108,9 @@ export type MCPResourceProviderInit<TContext = unknown> = {
 };
 
 // Templates
+/** String template for dynamic resource URIs. */
 export type ResourceUriTemplate = string;
+/** Describes a dynamic resource provided via a template. */
 export type MCPResourceTemplateDescriptor = {
   uriTemplate: ResourceUriTemplate;
   name: string;
@@ -102,11 +118,13 @@ export type MCPResourceTemplateDescriptor = {
   description: string;
   mimeType: string;
 };
+/** Provider exposing dynamic resources resolved from a URI template. */
 export interface MCPResourceTemplateProvider<TContext = unknown> {
   descriptor: MCPResourceTemplateDescriptor;
   read(uri: ResourceUri, context: TContext): Promise<MCPResourceReadResult> | MCPResourceReadResult;
 }
 
+/** Initialization input used to create a resource template provider. */
 export type MCPResourceTemplateProviderInit<TContext = unknown> = {
   descriptor: MCPResourceTemplateDescriptor;
   read: (
@@ -115,6 +133,7 @@ export type MCPResourceTemplateProviderInit<TContext = unknown> = {
   ) => Promise<MCPResourceReadResult> | MCPResourceReadResult;
 };
 
+/** Group of tools, prompts, resources, and optional auth middleware. */
 export interface MCPToolkit<TContext, TAuth> {
   namespace: string;
   description?: string;

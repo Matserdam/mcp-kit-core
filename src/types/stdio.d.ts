@@ -1,7 +1,9 @@
 // STDIO transport types
 
+/** Message framing strategies supported by the STDIO transport. */
 export type MCPStdioFraming = "ndjson" | "length-prefixed";
 
+/** Options to configure the STDIO transport. */
 export interface MCPStdioOptions {
   /** Readable stream - provide when running under non-Node runtimes too. */
   input?: ReadableStream<Uint8Array>;
@@ -13,6 +15,7 @@ export interface MCPStdioOptions {
   enableSignalHandlers?: boolean;
 }
 
+/** Controller returned by the STDIO transport loop. */
 export interface MCPStdioController {
   /** Whether the stdio loop is actively running. */
   readonly isRunning: boolean;

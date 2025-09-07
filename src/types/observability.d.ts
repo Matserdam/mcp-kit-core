@@ -1,3 +1,8 @@
+/**
+ * Hook interface for emitting observability/audit events.
+ *
+ * Implementations can log, buffer, or forward events to external systems.
+ */
 export interface EventSink {
   // RPC lifecycle
   rpcReceived?(payload: { id: string | number | null; method: string }): void;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MCPServer } from "../src/mod";
-import { generateId } from "../src/lib/utils/uuid";
+import { MCPServer } from "../src/mod.ts";
+import { generateId } from "../src/lib/utils/uuid.ts";
 
 describe("Edge Compatibility", () => {
   it("should import from edge entry without stdio", () => {

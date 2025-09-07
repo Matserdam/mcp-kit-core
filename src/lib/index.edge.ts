@@ -6,12 +6,23 @@ import type { MCPDiscoveryConfig } from "../types/auth.d.ts";
 import { createDiscoveryResponse, MCPDiscoveryHandler } from "./auth/discovery.ts";
 import { handleFetchRequest, validateDiscoveryConfig } from "./server/helpers.ts";
 
+/**
+ * Edge-compatible MCP server for Deno/Workers.
+ *
+ * Exposes a standard Fetch handler and optionally serves OAuth 2.1 discovery
+ * endpoints per RFC 8414 and RFC 9728.
+ */
 export class MCPServer {
   private readonly toolkits: MCPToolkit<unknown, unknown>[];
   private readonly discoveryHandler?: MCPDiscoveryHandler;
   private readonly options: MCPServerOptions;
   private readonly eventSink: EventSink;
 
+  /**
+   * Create a new MCP server instance for edge environments.
+   *
+   * @param options - Server configuration including toolkits and discovery
+   */
   constructor(options: MCPServerOptions) {
     this.toolkits = options.toolkits;
     this.options = options;
@@ -31,6 +42,14 @@ export class MCPServer {
     validateDiscoveryConfig(config);
   }
 
+  /**
+   * Handle a Fetch request and return a JSON-RPC response.
+   *
+   * Also serves OAuth 2.1 discovery endpoints when enabled via options.
+   *
+   * @param request - The incoming HTTP request
+   * @returns A Response containing JSON or a streaming event response
+   */
   fetch = async (request: Request): Promise<Response> => {
     const resolveDiscovery = async (url: URL): Promise<Response | null> => {
       if (!this.discoveryHandler || this.options.discovery?.enableDiscoveryEndpoints === false) {

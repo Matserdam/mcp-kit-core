@@ -13,6 +13,11 @@ export class MCPServer {
   private readonly options: MCPServerOptions;
   private readonly eventSink: EventSink;
 
+  /**
+   * Create a new MCP server instance for Node/Bun environments.
+   *
+   * @param options - Server configuration including toolkits and discovery
+   */
   constructor(options: MCPServerOptions) {
     this.toolkits = options.toolkits;
     this.options = options;
@@ -32,6 +37,14 @@ export class MCPServer {
     validateDiscoveryConfig(config);
   }
 
+  /**
+   * Handle a Fetch request and return a JSON-RPC response.
+   *
+   * Also serves OAuth 2.1 discovery endpoints when enabled via options.
+   *
+   * @param request - The incoming HTTP request
+   * @returns A Response containing JSON or a streaming event response
+   */
   fetch = async (request: Request): Promise<Response> => {
     const resolveDiscovery = async (url: URL): Promise<Response | null> => {
       if (!this.discoveryHandler || this.options.discovery?.enableDiscoveryEndpoints === false) {
@@ -57,6 +70,10 @@ export class MCPServer {
     });
   };
 
+  /**
+   * Experimental: return a streamable HTTP response for server-sent events.
+   * Currently returns 501; reserved for future multi-event streaming.
+   */
   public httpStreamable(
     req: unknown,
   ): Promise<{ status: number; headers: Headers; body: ReadableStream<Uint8Array> }> {
@@ -75,6 +92,12 @@ export class MCPServer {
     });
   }
 
+  /**
+   * Start the STDIO transport loop in Node/Bun.
+   *
+   * Loads the Node-specific implementation dynamically to avoid bundling
+   * into edge builds.
+   */
   public startStdio = async (options?: MCPStdioOptions): Promise<MCPStdioController> => {
     // Dynamic import to avoid pulling Node-specific code into edge builds
     const { StdioController } = await import("./stdio.ts");

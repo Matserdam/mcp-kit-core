@@ -1,7 +1,17 @@
 import type { EventSink } from "../../types/observability.d.ts";
 
+/**
+ * No-op event sink implementation.
+ *
+ * Safest default for production when no audit logging is configured.
+ */
 export class NoopEventSink implements EventSink {}
 
+/**
+ * Console-based event sink for development.
+ *
+ * Emits event lifecycle messages using `console.debug`.
+ */
 export class ConsoleEventSink implements EventSink {
   private write(event: string, payload: unknown): void {
     try {
@@ -115,6 +125,11 @@ export class ConsoleEventSink implements EventSink {
   }
 }
 
+/**
+ * In-memory event sink for testing and inspection.
+ *
+ * Stores events in an array; useful for assertions in tests.
+ */
 export class InMemoryEventSink implements EventSink {
   public events: Array<{ event: string; payload: unknown; timestamp: number }> = [];
 

@@ -2,6 +2,9 @@ import { MCPJSONSchema, MCPToolkit } from "./toolkit.d.ts";
 import type { MCPDiscoveryConfig } from "./auth.d.ts";
 import type { EventSink } from "./observability.d.ts";
 
+/**
+ * Configuration options for {@link import("../lib/index.ts").MCPServer}.
+ */
 export interface MCPServerOptions {
   toolkits: MCPToolkit<unknown, unknown>[];
   discovery?: MCPDiscoveryConfig;
@@ -9,6 +12,9 @@ export interface MCPServerOptions {
   eventSink?: EventSink;
 }
 
+/**
+ * Generic JSON-RPC response envelope used by the MCP server.
+ */
 export interface MCPResponse {
   jsonrpc: "2.0";
   id: string | number | null;
@@ -30,6 +36,7 @@ export interface MCPResponse {
   };
 }
 
+/** Parameters for the `tools/call` method. */
 export type MCPToolsCallParams = {
   name: `${string}_${string}` | string;
   params?: unknown;
@@ -37,13 +44,20 @@ export type MCPToolsCallParams = {
 };
 
 // Method-specific params (loose unions to preserve backward compatibility)
+/** Parameters for the `prompts/get` method. */
 export type MCPPromptGetParams =
   | { name: string; arguments?: Record<string, unknown> }
   | Record<string, unknown>;
+/** URI protocol prefix, e.g. `file://`, `https://`. */
 export type ResourceProtocol = `${string}://`;
+/** Canonical resource URI string. */
 export type ResourceUri = `${ResourceProtocol}${string}`;
+/** Parameters for the `resources/read` method. */
 export type MCPResourceReadParams = { uri: ResourceUri } | Record<string, unknown>;
 
+/**
+ * Union type of all JSON-RPC requests supported by the MCP server.
+ */
 export type MCPRequest = {
   id: string | number | null;
   method:
@@ -73,6 +87,7 @@ export type MCPRequest = {
   errror?: Record<string, unknown>;
 };
 
+/** Result payload for the `initialize` method. */
 export type InitializeResult = {
   protocolVersion: string;
 
@@ -100,11 +115,13 @@ export type InitializeResult = {
   instructions?: string;
 };
 
+/** Result payload for the `tools/call` method. */
 export type MCPToolCallResult = {
   content: ContentItem[];
   structuredContent?: Record<string, unknown>;
 };
 
+/** Result payload for the `tools/list` method. */
 export type MCPToolsListResult = {
   tools: {
     name: string;
@@ -115,6 +132,7 @@ export type MCPToolsListResult = {
 };
 
 // Prompts list result per MCP spec
+/** Result payload for the `prompts/list` method. */
 export type MCPPROMPTSListResult = {
   prompts: {
     name: string;
@@ -124,17 +142,20 @@ export type MCPPROMPTSListResult = {
   }[];
 };
 
+/** Single message entry used in `prompts/get` results. */
 export type MCPPROMPTMessage = {
   role: "user" | "assistant" | "system";
   content: { type: "text"; text: string };
 };
 
+/** Result payload for the `prompts/get` method. */
 export type MCPPROMPTSGetResult = {
   description?: string;
   messages: MCPPROMPTMessage[];
 };
 
 // Resources list result per MCP spec
+/** Result payload for the `resources/list` method. */
 export type MCPResourcesListResult = {
   resources: Array<{
     uri: ResourceUri;
@@ -148,11 +169,13 @@ export type MCPResourcesListResult = {
 };
 
 // Core content item variants the MCP clients expect
+/** Text content item variant. */
 export type ContentText = {
   type: "text";
   text: string;
 };
 
+/** Image content item variant with base64-encoded data. */
 export type ContentImage = {
   type: "image";
   /** Base64-encoded bytes */
@@ -165,6 +188,7 @@ export type ContentImage = {
   };
 };
 
+/** Audio content item variant with base64-encoded data. */
 export type ContentAudio = {
   type: "audio";
   /** Base64-encoded bytes */
@@ -177,6 +201,7 @@ export type ContentAudio = {
  * A link to an external artifact the client can open/download.
  * Use this when you want to show a single, simple link (no data in-band).
  */
+/** Link-only content item to an external resource. */
 export type ContentResourceLink = {
   type: "resource_link";
   name: string;
@@ -187,6 +212,7 @@ export type ContentResourceLink = {
  * An in-band resource payload. Use this when you want to include the resource itself
  * or reference it with richer metadata. One of "uri" | "text" | "blob" should be provided.
  */
+/** In-band resource payload content item. */
 export type ContentResource = {
   type: "resource";
   resource:
@@ -196,6 +222,7 @@ export type ContentResource = {
 };
 
 // Union of all supported content types
+/** Union of all supported content item variants. */
 export type ContentItem =
   | ContentText
   | ContentImage
@@ -206,6 +233,7 @@ export type ContentItem =
 // Tool call response shape: { content: ContentItem[] }
 
 // Resource content entries for resources/read
+/** Entry used in `resources/read` results. */
 export type MCPResourceContent = {
   uri: ResourceUri;
   name?: string;
@@ -218,11 +246,13 @@ export type MCPResourceContent = {
 };
 
 // Result for resources/read calls per MCP spec
+/** Result payload for the `resources/read` method. */
 export type MCPResourceReadResult = {
   contents: MCPResourceContent[];
 };
 
 // Templates list result per MCP spec
+/** Result payload for the `resources/templates/list` method. */
 export type MCPResourceTemplatesListResult = {
   resourceTemplates: Array<{
     uriTemplate: string;
@@ -233,8 +263,8 @@ export type MCPResourceTemplatesListResult = {
   }>;
 };
 
-// Notification acknowledgement result
+/** Notification acknowledgement result. */
 export type MCPNotificationAckResult = { ok: true };
 
-// Ping result: empty object per MCP spec
+/** Ping result: empty object per MCP spec. */
 export type MCPPingResult = Record<string, never>;

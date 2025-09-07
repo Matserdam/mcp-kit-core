@@ -30,6 +30,9 @@ import { executeAuth, validateAuthMiddleware } from "./executor.ts";
 export class MCPAuthMiddlewareManager {
   private resourceUriExtractor: MCPResourceUriExtractor;
 
+  /**
+   * Create an auth manager with an optional custom resource URI extractor.
+   */
   constructor(resourceUriExtractor?: MCPResourceUriExtractor) {
     this.resourceUriExtractor = resourceUriExtractor || {
       extractUri: (request: MCPRequestWithHeaders): string => {
@@ -49,7 +52,7 @@ export class MCPAuthMiddlewareManager {
     };
   }
 
-  // Execute auth for a specific toolkit
+  /** Execute auth for a specific toolkit. */
   async executeToolkitAuth<TAuth>(
     toolkit: MCPToolkit<unknown, TAuth>,
     request: MCPRequest | null,
@@ -91,7 +94,7 @@ export class MCPAuthMiddlewareManager {
     }
   }
 
-  // Execute auth for multiple toolkits and return the first valid result
+  /** Execute auth for multiple toolkits and return the first valid result. */
   async executeToolkitsAuth(
     toolkits: MCPToolkit<unknown, unknown>[],
     request: MCPRequest | null,
@@ -115,12 +118,12 @@ export class MCPAuthMiddlewareManager {
     return null; // No auth middleware found or all failed
   }
 
-  // Check if any toolkit requires auth
+  /** Check if any toolkit requires authentication. */
   requiresAuth(toolkits: MCPToolkit<unknown, unknown>[]): boolean {
     return toolkits.some((toolkit) => "auth" in toolkit && toolkit.auth !== undefined);
   }
 
-  // Get auth middleware for a specific toolkit
+  /** Get the auth middleware for a specific toolkit if valid. */
   getAuthMiddleware<TAuth>(
     toolkit: MCPToolkit<unknown, TAuth>,
   ): MCPHTTPAuthMiddleware<TAuth> | MCPSTDIOAuthMiddleware<TAuth> | null {
@@ -131,7 +134,7 @@ export class MCPAuthMiddlewareManager {
     return toolkit.auth;
   }
 
-  // Validate auth configuration across all toolkits
+  /** Validate auth configuration across all toolkits. */
   validateAuthConfiguration(
     toolkits: MCPToolkit<unknown, unknown>[],
   ): { valid: boolean; errors: string[] } {
@@ -149,7 +152,7 @@ export class MCPAuthMiddlewareManager {
     };
   }
 
-  // Set custom resource URI extractor
+  /** Set a custom resource URI extractor at runtime. */
   setResourceUriExtractor(extractor: MCPResourceUriExtractor): void {
     this.resourceUriExtractor = extractor;
   }

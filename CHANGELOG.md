@@ -9,6 +9,10 @@
 - Bumped version to 0.0.3 for JSR publish
 - Clarified JSR package metadata to be managed in Settings (description, runtimes)
 
+### Docs
+
+- Added TSDoc to exported symbols across server, toolkit, auth, observability, stdio, and search types to raise JSR symbol documentation coverage above 80%
+
 ## 0.0.2 (2025-01-27)
 
 ### Fixed
