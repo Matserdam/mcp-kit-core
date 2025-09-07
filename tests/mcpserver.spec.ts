@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MCPServer } from "../src/index";
+import { MCPServer } from "../src/index.ts";
 import { z } from "zod";
 
 describe("MCPServer", () => {
@@ -48,7 +48,7 @@ describe("MCPServer", () => {
             {
               name: "get",
               description: "Get weather",
-              run: () => ({ tempC: 20 }),
+              run: () => ({ content: [{ type: "text", text: "20" }] }),
             },
           ],
         },

@@ -7,9 +7,10 @@ export function handleInitialize(
 ): MCPResponse {
   const requestedProtocol = (params as { protocolVersion?: unknown })?.protocolVersion;
   const serverProtocol = "2025-06-18";
-  const protocolVersion = strategy === "mirror" && typeof requestedProtocol === "string" && requestedProtocol.length > 0
-    ? requestedProtocol
-    : serverProtocol;
+  const protocolVersion =
+    strategy === "mirror" && typeof requestedProtocol === "string" && requestedProtocol.length > 0
+      ? requestedProtocol
+      : serverProtocol;
 
   const result = {
     protocolVersion,

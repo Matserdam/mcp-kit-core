@@ -109,7 +109,8 @@ export class MCPServer {
     const { StdioController } = await import("./stdio.ts");
     const controller = new StdioController(this.toolkits, {
       ...options,
-      protocolVersionStrategy: options?.protocolVersionStrategy ?? this.options.protocolVersionStrategy ?? "ours",
+      protocolVersionStrategy: options?.protocolVersionStrategy ??
+        this.options.protocolVersionStrategy ?? "ours",
     });
     controller.start();
     return controller;

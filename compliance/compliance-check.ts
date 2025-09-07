@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { MCPComplianceValidator } from "./validator";
+import { MCPComplianceValidator } from "./validator.ts";
 import { writeFile } from "fs/promises";
 
 interface ComplianceReport {
