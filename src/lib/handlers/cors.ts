@@ -128,7 +128,7 @@ export class CORSHandler {
  */
 export const defaultCORSHandler = new CORSHandler({
   allowedOrigins: ["*"],
-  allowedMethods: ["GET", "OPTIONS"],
+  allowedMethods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
   allowCredentials: false,
 });

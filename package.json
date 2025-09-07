@@ -1,6 +1,6 @@
 {
   "name": "@mcp-kit/core",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Lightweight TypeScript Model Context Protocol (MCP) server package",
   "license": "MIT",
   "type": "module",
