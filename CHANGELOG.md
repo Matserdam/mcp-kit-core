@@ -1,4 +1,4 @@
-## 0.0.5 (2025-01-27)
+## 0.0.5
 
 ### Added
 
@@ -9,14 +9,18 @@
 
 - `initialize` handler now honors the configured strategy while remaining compliant with existing schema/tests.
 
-## 0.0.4 (2025-01-27)
+### Docs
+
+- README: added MCP protocol coverage table 
+
+## 0.0.4
 
 ### Changed
 
 - Bump version to 0.0.4 for JSR publish with provenance
 - Improved TSDoc coverage across public API to satisfy JSR docs score
 
-## 0.0.3 (2025-01-27)
+## 0.0.3
 
 ### Added
 
@@ -31,7 +35,7 @@
 
 - Added TSDoc to exported symbols across server, toolkit, auth, observability, stdio, and search types to raise JSR symbol documentation coverage above 80%
 
-## 0.0.2 (2025-01-27)
+## 0.0.2
 
 ### Fixed
 
@@ -83,7 +87,7 @@
   - Comprehensive multi-runtime compatibility (Node.js, Deno, Bun)
   - Bundle size within budgets (449KB total, <60ms cold-start in CI)
 
-## 0.0.1 (2025-09-06)
+## 0.0.1
 
 Initial JSR-ready release for `@mcp-kit/core`.
 
