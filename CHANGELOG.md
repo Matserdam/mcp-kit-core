@@ -1,3 +1,10 @@
+## 0.0.4 (2025-01-27)
+
+### Changed
+
+- Bump version to 0.0.4 for JSR publish with provenance
+- Improved TSDoc coverage across public API to satisfy JSR docs score
+
 ## 0.0.3 (2025-01-27)
 
 ### Added
