@@ -1,3 +1,14 @@
+## 0.0.6
+
+### Added
+
+- CORS support enabled by default for browser-based MCP clients (e.g., Superassistant)
+- Default CORS handler now allows POST method for JSON-RPC requests
+
+### Changed
+
+- `defaultCORSHandler` now includes POST in allowed methods alongside GET and OPTIONS
+
 ## 0.0.5
 
 ### Added
