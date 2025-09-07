@@ -10,6 +10,12 @@ export interface MCPServerOptions {
   discovery?: MCPDiscoveryConfig;
   /** Optional event sink for audit/observability. Defaults to no-op. */
   eventSink?: EventSink;
+  /**
+   * Strategy for the protocolVersion returned from initialize.
+   * - "ours" (default): always return the server's canonical protocol version
+   * - "mirror": mirror the client's requested protocolVersion when provided
+   */
+  protocolVersionStrategy?: "ours" | "mirror";
 }
 
 /**

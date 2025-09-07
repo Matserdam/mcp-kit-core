@@ -13,6 +13,12 @@ export interface MCPStdioOptions {
   framing?: MCPStdioFraming;
   /** When true (default), install SIGINT/SIGTERM handlers to stop stdio gracefully. */
   enableSignalHandlers?: boolean;
+  /**
+   * Strategy for the protocolVersion returned from initialize when using stdio transport.
+   * - "ours" (default): always return the server's canonical protocol version
+   * - "mirror": mirror the client's requested protocolVersion when provided
+   */
+  protocolVersionStrategy?: "ours" | "mirror";
 }
 
 /** Controller returned by the STDIO transport loop. */

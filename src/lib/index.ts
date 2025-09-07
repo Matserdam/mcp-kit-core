@@ -23,6 +23,11 @@ export class MCPServer {
     this.options = options;
     this.eventSink = options.eventSink ?? new NoopEventSink();
 
+    const strat = this.options.protocolVersionStrategy;
+    if (strat !== undefined && strat !== "ours" && strat !== "mirror") {
+      throw new Error('Invalid protocolVersionStrategy: expected "ours" | "mirror"');
+    }
+
     if (options.discovery) {
       // Validate discovery configuration
       this.validateDiscoveryConfig(options.discovery);
@@ -67,6 +72,7 @@ export class MCPServer {
       eventSink: this.eventSink,
       resolveDiscovery,
       discoveryHandler: this.discoveryHandler,
+      protocolVersionStrategy: this.options.protocolVersionStrategy ?? "ours",
     });
   };
 
@@ -101,7 +107,10 @@ export class MCPServer {
   public startStdio = async (options?: MCPStdioOptions): Promise<MCPStdioController> => {
     // Dynamic import to avoid pulling Node-specific code into edge builds
     const { StdioController } = await import("./stdio.ts");
-    const controller = new StdioController(this.toolkits, options);
+    const controller = new StdioController(this.toolkits, {
+      ...options,
+      protocolVersionStrategy: options?.protocolVersionStrategy ?? this.options.protocolVersionStrategy ?? "ours",
+    });
     controller.start();
     return controller;
   };

@@ -100,4 +100,44 @@ describe("MCPServer", () => {
     const response = json as { result: { content: Array<{ text: string }> } };
     expect(response.result?.content?.[0]?.text).toBe("Paris");
   });
+
+  it("initialize uses ours strategy by default", async () => {
+    const server = new MCPServer({ toolkits: [] });
+    const res = await server.fetch(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 11,
+          method: "initialize",
+          params: { protocolVersion: "1999-01-01" },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json() as { result: { protocolVersion: string } };
+    expect(typeof data.result.protocolVersion).toBe("string");
+    expect(data.result.protocolVersion).toBe("2025-06-18");
+  });
+
+  it("initialize mirrors when protocolVersionStrategy=mirror", async () => {
+    const server = new MCPServer({ toolkits: [], protocolVersionStrategy: "mirror" });
+    const reqBody = {
+      jsonrpc: "2.0",
+      id: 12,
+      method: "initialize",
+      params: { protocolVersion: "1999-01-01" },
+    };
+    const res = await server.fetch(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(reqBody),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json() as { result: { protocolVersion: string } };
+    expect(data.result.protocolVersion).toBe("1999-01-01");
+  });
 });

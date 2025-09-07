@@ -17,6 +17,11 @@ export interface MCPRPCContext {
   env?: Record<string, string>;
   discovery?: MCPDiscoveryConfig;
   eventSink?: EventSink;
+  /**
+   * Strategy for how the server reports protocolVersion in initialize.
+   * Defaults to "ours" when unspecified.
+   */
+  protocolVersionStrategy?: "ours" | "mirror";
 }
 
 export async function handleRPC(
@@ -32,7 +37,7 @@ export async function handleRPC(
 
   switch (method) {
     case "initialize":
-      return handleInitialize(id, params);
+      return handleInitialize(id, params, context?.protocolVersionStrategy ?? "ours");
     case "ping":
       return handlePing(id);
     case "prompts/get":

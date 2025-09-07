@@ -1,3 +1,14 @@
+## 0.0.5 (2025-01-27)
+
+### Added
+
+- `protocolVersionStrategy` server/stdio option with runtime validation. Defaults to "ours"; set to "mirror" to echo the client's requested `protocolVersion` in `initialize`.
+- Tests covering default "ours" behavior and "mirror" strategy, across HTTP and STDIO paths.
+
+### Changed
+
+- `initialize` handler now honors the configured strategy while remaining compliant with existing schema/tests.
+
 ## 0.0.4 (2025-01-27)
 
 ### Changed

@@ -1,10 +1,15 @@
 import type { MCPResponse } from "../../types/server.d.ts";
 
-export function handleInitialize(id: string | number | null, params: unknown): MCPResponse {
+export function handleInitialize(
+  id: string | number | null,
+  params: unknown,
+  strategy: "ours" | "mirror" = "ours",
+): MCPResponse {
   const requestedProtocol = (params as { protocolVersion?: unknown })?.protocolVersion;
-  const protocolVersion = typeof requestedProtocol === "string" && requestedProtocol.length > 0
+  const serverProtocol = "2025-06-18";
+  const protocolVersion = strategy === "mirror" && typeof requestedProtocol === "string" && requestedProtocol.length > 0
     ? requestedProtocol
-    : "2025-06-18";
+    : serverProtocol;
 
   const result = {
     protocolVersion,

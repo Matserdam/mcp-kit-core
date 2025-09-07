@@ -47,8 +47,10 @@ export async function handleFetchRequest(opts: {
   eventSink?: EventSink;
   resolveDiscovery: (url: URL) => Promise<Response | null>;
   discoveryHandler?: MCPDiscoveryHandler;
+  protocolVersionStrategy?: "ours" | "mirror";
 }): Promise<Response> {
   const { request, toolkits, discovery, eventSink, resolveDiscovery, discoveryHandler } = opts;
+  const protocolVersionStrategy = opts.protocolVersionStrategy ?? "ours";
   const method = request.method.toUpperCase();
   const url = new URL(request.url);
 
@@ -118,6 +120,7 @@ export async function handleFetchRequest(opts: {
     httpRequest: request,
     discovery,
     eventSink,
+    protocolVersionStrategy,
   });
 
   if (discoveryHandler && "error" in response && response.error?.code === -32001) {

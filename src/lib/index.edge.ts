@@ -28,6 +28,11 @@ export class MCPServer {
     this.options = options;
     this.eventSink = options.eventSink ?? new NoopEventSink();
 
+    const strat = this.options.protocolVersionStrategy;
+    if (strat !== undefined && strat !== "ours" && strat !== "mirror") {
+      throw new Error('Invalid protocolVersionStrategy: expected "ours" | "mirror"');
+    }
+
     if (options.discovery) {
       // Validate discovery configuration
       this.validateDiscoveryConfig(options.discovery);
@@ -72,6 +77,7 @@ export class MCPServer {
       eventSink: this.eventSink,
       resolveDiscovery,
       discoveryHandler: this.discoveryHandler,
+      protocolVersionStrategy: this.options.protocolVersionStrategy ?? "ours",
     });
   };
 

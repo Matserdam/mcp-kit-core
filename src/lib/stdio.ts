@@ -1,8 +1,8 @@
 import type { MCPRequest, MCPResponse } from "../types/server.d.ts";
 import type { MCPStdioController, MCPStdioOptions } from "../types/stdio.d.ts";
-import { handleRPC } from "./rpc";
+import { handleRPC } from "./rpc.ts";
 import type { MCPToolkit } from "../types/toolkit.d.ts";
-import { createAuthContext, defaultAuthMiddlewareManager } from "./auth";
+import { createAuthContext, defaultAuthMiddlewareManager } from "./auth/index.ts";
 import process from "node:process";
 import { Buffer } from "node:buffer";
 
@@ -31,7 +31,14 @@ export class StdioController implements MCPStdioController {
   constructor(
     private readonly toolkits: MCPToolkit<unknown, unknown>[],
     private readonly options: MCPStdioOptions = {},
-  ) {}
+  ) {
+    const strat = this.options.protocolVersionStrategy;
+    if (strat !== undefined && strat !== "ours" && strat !== "mirror") {
+      throw new Error(
+        'Invalid protocolVersionStrategy: expected "ours" | "mirror"',
+      );
+    }
+  }
 
   /** Whether the stdio loop is running. */
   get isRunning(): boolean {
@@ -53,7 +60,10 @@ export class StdioController implements MCPStdioController {
         // Bridge NodeJS.ReadStream → Web ReadableStream
         start(controller) {
           const nodeIn = input as NodeJS.ReadStream;
-          nodeIn.on("data", (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
+          nodeIn.on("data", (chunk: Buffer) => {
+            const view = new Uint8Array(chunk as unknown as Uint8Array);
+            controller.enqueue(view);
+          });
           nodeIn.on("end", () => {
             try {
               controller.close();
@@ -70,7 +80,7 @@ export class StdioController implements MCPStdioController {
         // Bridge Web WritableStream → NodeJS.WriteStream
         write(chunk) {
           const nodeOut = output as NodeJS.WriteStream;
-          nodeOut.write(Buffer.from(chunk));
+          nodeOut.write(chunk);
         },
       });
 
@@ -194,7 +204,9 @@ export class StdioController implements MCPStdioController {
               continue;
             }
 
-            const response = await handleRPC(request, this.toolkits);
+            const response = await handleRPC(request, this.toolkits, {
+              protocolVersionStrategy: this.options.protocolVersionStrategy ?? "ours",
+            });
             void this.queueWrite(textEncoder.encode(JSON.stringify(response) + "\n"));
           } catch {
             const errorResponse: MCPResponse = {
@@ -246,7 +258,9 @@ export class StdioController implements MCPStdioController {
             return;
           }
 
-          const response = await handleRPC(request, this.toolkits);
+          const response = await handleRPC(request, this.toolkits, {
+            protocolVersionStrategy: this.options.protocolVersionStrategy ?? "ours",
+          });
           void this.queueWrite(textEncoder.encode(JSON.stringify(response) + "\n"));
         } catch {
           const errorResponse: MCPResponse = {
